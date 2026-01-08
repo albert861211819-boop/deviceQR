@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設備管理 - 離線傳輸版</title>
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 10px; background: #fff; }
+        .info-box { background: #e7f3ff; border-left: 5px solid #2196F3; padding: 15px; margin-top: 20px; }
+        input { width: calc(50% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add { background: #28a745; color: white; width: 100%; }
+        .btn-qr { background: #007bff; color: white; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+        #qrDisplay { text-align: center; display: none; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
+        #qrcode { display: inline-block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="mainView">
+        <h2>🛠️ 設備管理系統</h2>
+        <div class="card">
+            <input type="text" id="devName" placeholder="設備名稱">
+            <input type="text" id="devID" placeholder="設備編號">
+            <button class="btn-add" onclick="addNew()">新增設備並儲存</button>
+        </div>
+
+        <table id="deviceTable">
+            <thead><tr><th>編號</th><th>名稱</th><th>QR</th></tr></thead>
+            <tbody id="list"></tbody>
+        </table>
+
+        <div id="qrDisplay">
+            <h4>設備 QR Code</h4>
+            <div id="qrcode"></div>
+            <p id="qrText"></p>
+            <button onclick="document.getElementById('qrDisplay').style.display='none'" style="background:#666; color:#fff">關閉</button>
+        </div>
+    </div>
+
+    <div id="detailView" style="display:none;">
+        <div class="info-box">
+            <h2 id="viewName"></h2>
+            <p><strong>設備編號：</strong> <span id="viewID"></span></p>
+            <p><strong>掃描時間：</strong> <span id="viewTime"></span></p>
+            <hr>
+            <p style="font-size: 0.8em; color: #666;">提示：此資訊直接從 QR Code 讀取。</p>
+        </div>
+        <button onclick="window.location.href=window.location.pathname" style="margin-top:20px; width:100%;">返回管理頁面</button>
+    </div>
+</div>
+
+<script>
+    let devices = JSON.parse(localStorage.getItem('devices_v2')) || [];
+
+    window.onload = function() {
+        const params = new URLSearchParams(window.location.search);
+        // 重點：同時讀取 id 和 name 參數
+        const id = params.get('id');
+        const name = params.get('name');
+
+        if (id && name) {
+            showDetail(id, name);
+        } else {
+            renderList();
+        }
+    };
+
+    function addNew() {
+        const name = document.getElementById('devName').value;
+        const id = document.getElementById('devID').value;
+        if(!name || !id) return alert("請填寫完整");
+        
+        devices.push({name, id});
+        localStorage.setItem('devices_v2', JSON.stringify(devices));
+        renderList();
+        document.getElementById('devName').value = '';
+        document.getElementById('devID').value = '';
+    }
+
+    function renderList() {
+        const tbody = document.getElementById('list');
+        tbody.innerHTML = devices.map(d => `
+            <tr>
+                <td>${d.id}</td>
+                <td>${d.name}</td>
+                <td><button class="btn-qr" onclick="generate('${d.id}', '${d.name}')">生成</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function generate(id, name) {
+        const qrDiv = document.getElementById("qrcode");
+        qrDiv.innerHTML = "";
+        
+        // 將名稱也編碼進網址：?id=XXX&name=YYY
+        const baseUrl = window.location.href.split('?')[0];
+        const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+
+        new QRCode(qrDiv, {
+            text: finalUrl,
+            width: 180,
+            height: 180,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        document.getElementById("qrText").innerText = `設備：${name}`;
+        document.getElementById("qrDisplay").style.display = "block";
+    }
+
+    function showDetail(id, name) {
+        document.getElementById('mainView').style.display = 'none';
+        document.getElementById('detailView').style.display = 'block';
+        document.getElementById('viewName').innerText = name;
+        document.getElementById('viewID').innerText = id;
+        document.getElementById('viewTime').innerText = new Date().toLocaleString();
+    }
+</script>
+
+</body>
+</html>
