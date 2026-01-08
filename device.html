@@ -96,19 +96,19 @@
     }
 
     function generate(id, name) {
-        const qrDiv = document.getElementById("qrcode");
-        qrDiv.innerHTML = "";
-        
-        // 將名稱也編碼進網址：?id=XXX&name=YYY
-        const baseUrl = window.location.href.split('?')[0];
-        const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+    const qrDiv = document.getElementById("qrcode");
+    qrDiv.innerHTML = "";
+    
+    // 使用 location.origin + location.pathname 獲取不帶參數的純網址
+    const baseUrl = window.location.origin + window.location.pathname;
+    const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
-        new QRCode(qrDiv, {
-            text: finalUrl,
-            width: 180,
-            height: 180,
-            correctLevel: QRCode.CorrectLevel.H
-        });
+    new QRCode(qrDiv, {
+        text: finalUrl,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.H
+    });
 
         document.getElementById("qrText").innerText = `設備：${name}`;
         document.getElementById("qrDisplay").style.display = "block";
@@ -124,4 +124,5 @@
 </script>
 
 </body>
+
 </html>
