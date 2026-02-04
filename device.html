@@ -133,12 +133,52 @@
         document.getElementById('qrBox').classList.remove('hidden');
     }
 
-    function showTestPage(id, name) {
+    // 當進入設備頁面時
+    async function showTestPage(id, name) {
         document.getElementById('testView').classList.remove('hidden');
         document.getElementById('displayDevName').innerText = name;
         document.getElementById('displayDevID').innerText = id;
+        
+        // 1. 先顯示本機暫存的紀錄（速度快）
         renderLogs(id);
+        
+        // 2. 同步雲端最新紀錄（跨裝置紀錄）
+        await syncLogsFromGoogle(id);
     }
+
+    // 從 Google Sheets 抓取資料
+    async function syncLogsFromGoogle(id) {
+        const content = document.getElementById('logContent');
+        content.innerHTML += "<p id='syncing' style='color:orange; font-size:12px;'>正在同步雲端紀錄...</p>";
+
+        try {
+            // 發送 GET 請求到你的 GAS 網址
+            const response = await fetch(GOOGLE_SCRIPT_URL);
+            const allRows = await response.json(); // 假設 GAS 回傳所有列
+            
+            // 過濾出屬於這台設備的紀錄 (假設 ID 在第 0 欄)
+            // 排除第一列標題，從第 1 列開始找
+            const filtered = allRows.slice(1).filter(row => row[0] == id).reverse();
+            
+            if (filtered.length > 0) {
+                const html = filtered.map(row => `
+                    <div class="log-item" style="border-left-color: #ffc107;">
+                        <strong>${row[2]}</strong> - 使用者: ${row[3]} <span style="color:blue;">(雲端)</span><br>
+                        <span class="log-time">${row[4]} 至 ${row[5]}</span>
+                    </div>
+                `).join('');
+                document.getElementById('syncing').remove();
+                content.innerHTML = html;
+            } else {
+                document.getElementById('syncing').innerText = "雲端尚無紀錄";
+            }
+        } catch (e) {
+            console.error(e);
+            if(document.getElementById('syncing')) 
+                document.getElementById('syncing').innerText = "無法同步雲端紀錄";
+        }
+    }
+    
 
     async function saveData() {
         const btn = document.getElementById('submitBtn');
@@ -193,3 +233,4 @@
 </script>
 </body>
 </html>
+
