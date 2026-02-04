@@ -3,101 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設備管理與測試紀錄系統</title>
+    <title>設備管理系統 - 權限控管版</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
     <style>
-        :root { --primary: #007bff; --bg: #f4f7f6; }
+        :root { --primary: #007bff; --bg: #f4f7f6; --admin-color: #6f42c1; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #fff; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
+        .admin-only { border: 2px solid var(--admin-color); position: relative; }
+        .admin-badge { position: absolute; top: -12px; right: 10px; background: var(--admin-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
         
-        /* 表單樣式 */
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
-        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        
-        button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-submit { background: #28a745; color: white; width: 100%; margin-top: 10px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-submit { background: #28a745; color: white; width: 100%; }
         .btn-qr { background: var(--primary); color: white; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
-        th { background: #f8f9fa; }
-
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: left; }
         #qrcode { display: inline-block; margin-top: 10px; border: 5px solid white; }
-        .record-item { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div id="adminPanel" class="card admin-only hidden">
+        <span class="admin-badge">管理員模式</span>
+        <h3>➕ 新增設備資產</h3>
+        <input type="text" id="devName" placeholder="設備名稱">
+        <input type="text" id="devID" placeholder="設備編號">
+        <button class="btn-submit" onclick="addDevice()">確認新增</button>
+    </div>
+
     <div id="mainView">
-        <h2>🛠️ 設備清單</h2>
-        <div class="card">
-            <div class="form-group">
-                <input type="text" id="devName" placeholder="設備名稱 (如: 示波器)">
-                <input type="text" id="devID" placeholder="編號 (如: OSC-01)" style="margin-top:10px;">
-                <button class="btn-submit" onclick="addDevice()">新增設備</button>
-            </div>
-        </div>
-        <table id="deviceTable">
-            <thead><tr><th>編號</th><th>名稱</th><th>操作</th></tr></thead>
+        <h2>📋 設備清單</h2>
+        <table>
+            <thead><tr><th>編號</th><th>名稱</th><th class="admin-op hidden">操作</th></tr></thead>
             <tbody id="listBody"></tbody>
         </table>
         
         <div id="qrBox" class="card hidden" style="text-align: center;">
             <h4>設備 QR Code</h4>
             <div id="qrcode"></div>
-            <p id="qrHint" style="font-size:12px; color:#666;"></p>
+            <p id="qrHint"></p>
             <button onclick="document.getElementById('qrBox').classList.add('hidden')" style="background:#666; color:white;">關閉</button>
         </div>
     </div>
 
     <div id="testView" class="hidden">
-        <button onclick="location.href=window.location.pathname" style="background:#6c757d; color:white; margin-bottom:10px;">⬅ 返回清單</button>
+        <button onclick="goHome()" style="background:#6c757d; color:white; margin-bottom:10px;">⬅ 返回清單</button>
         <div class="card">
             <h2 id="displayDevName"></h2>
             <p>編號：<span id="displayDevID"></span></p>
         </div>
-
         <div class="card">
             <h3>📝 填寫測試紀錄</h3>
-            <div class="form-group">
-                <label>測試機種</label>
-                <input type="text" id="testModel" placeholder="輸入機種型號">
-            </div>
-            <div class="form-group">
-                <label>使用者</label>
-                <input type="text" id="testerName" placeholder="輸入姓名">
-            </div>
-            <div class="form-group">
-                <label>起始時間</label>
-                <input type="datetime-local" id="startTime">
-            </div>
-            <div class="form-group">
-                <label>結束時間</label>
-                <input type="datetime-local" id="endTime">
-            </div>
-            <button class="btn-submit" onclick="saveTestLog()">儲存紀錄</button>
-        </div>
-
-        <div id="historyLog">
-            <h3>歷史測試紀錄</h3>
-            <div id="logContent"></div>
+            <label>測試機種</label><input type="text" id="testModel">
+            <label>使用者</label><input type="text" id="testerName">
+            <label>起始時間</label><input type="datetime-local" id="startTime">
+            <label>結束時間</label><input type="datetime-local" id="endTime">
+            <button class="btn-submit" onclick="saveToGoogle()">同步至雲端</button>
         </div>
     </div>
 </div>
 
 <script>
+    const GOOGLE_SCRIPT_URL = "你的API網址"; // ⬅ 請填入你的 GAS 網址
+    const ADMIN_PASSWORD = "admin"; // ⬅ 你可以自訂網址後的暗號
+
     let devices = JSON.parse(localStorage.getItem('dev_db_v3')) || [];
-    let testLogs = JSON.parse(localStorage.getItem('test_logs_v3')) || [];
+    let isAdmin = false;
 
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
+        // 檢查是否為管理員模式
+        if (params.get('mode') === ADMIN_PASSWORD) {
+            isAdmin = true;
+            document.getElementById('adminPanel').classList.remove('hidden');
+            const adminOps = document.querySelectorAll('.admin-op');
+            adminOps.forEach(el => el.classList.remove('hidden'));
+        }
+
         const id = params.get('id');
         const name = params.get('name');
-
         if (id && name) {
             showTestPage(id, name);
         } else {
@@ -116,11 +105,14 @@
 
     function renderTable() {
         const body = document.getElementById('listBody');
-        body.innerHTML = devices.map(d => `
+        body.innerHTML = devices.map((d, index) => `
             <tr>
                 <td>${d.id}</td>
                 <td>${d.name}</td>
-                <td><button class="btn-qr" onclick="makeQR('${d.id}', '${d.name}')">生成 QR</button></td>
+                <td class="${isAdmin ? '' : 'hidden'}">
+                    <button class="btn-qr" onclick="makeQR('${d.id}', '${d.name}')">生成 QR</button>
+                    <button onclick="deleteDev(${index})" style="background:#dc3545; color:white; border:none; border-radius:4px; padding:5px;">刪除</button>
+                </td>
             </tr>
         `).join('');
     }
@@ -128,13 +120,12 @@
     function makeQR(id, name) {
         const box = document.getElementById('qrcode');
         box.innerHTML = "";
+        // 生成的 QR Code 不帶管理員模式，確保使用者掃描後只有填寫權限
         const baseUrl = window.location.origin + window.location.pathname;
         const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
         new QRCode(box, { text: finalUrl, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.H });
-        document.getElementById('qrHint').innerText = `掃描以紀錄: ${name}`;
         document.getElementById('qrBox').classList.remove('hidden');
-        document.getElementById('qrBox').scrollIntoView({behavior:'smooth'});
     }
 
     function showTestPage(id, name) {
@@ -142,66 +133,43 @@
         document.getElementById('testView').classList.remove('hidden');
         document.getElementById('displayDevName').innerText = name;
         document.getElementById('displayDevID').innerText = id;
-        renderLogs(id);
     }
 
+    async function saveToGoogle() {
+        const logData = {
+            id: document.getElementById('displayDevID').innerText,
+            name: document.getElementById('displayDevName').innerText,
+            model: document.getElementById('testModel').value,
+            user: document.getElementById('testerName').value,
+            start: document.getElementById('startTime').value,
+            end: document.getElementById('endTime').value
+        };
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysE22tyQy4bra1DsHloJ7Bq6vGDxEt_oDguO2nq1fu0o1HVFRQs-GnvdmHEv_lLRI/exec";
+        if(!logData.model || !logData.user || !logData.start || !logData.end) return alert("請填寫所有欄位");
 
-    async function saveTestLog() {
-    const id = document.getElementById('displayDevID').innerText;
-    const name = document.getElementById('displayDevName').innerText;
-    
-    const logData = {
-        id: id,
-        name: name,
-        model: document.getElementById('testModel').value,
-        user: document.getElementById('testerName').value,
-        start: document.getElementById('startTime').value,
-        end: document.getElementById('endTime').value
-    };
-
-    if(!logData.model || !logData.user || !logData.start || !logData.end) {
-        return alert("請填寫所有欄位");
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(logData)
+            });
+            alert("✅ 紀錄已上傳雲端！");
+        } catch (e) { alert("❌ 上傳失敗"); }
     }
 
-    // 顯示轉圈圈或提示
-    alert("正在同步至雲端，請稍候...");
-
-    try {
-        // 使用 fetch 將資料傳給 Google Script
-        await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors", // 避開跨網域問題
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(logData)
-        });
-
-        alert("✅ 資料已成功同步至 Google 試算表！");
-        
-        // 清空欄位
-        document.getElementById('testModel').value = '';
-        document.getElementById('testerName').value = '';
-    } catch (error) {
-        console.error("同步失敗:", error);
-        alert("❌ 雲端同步失敗，請檢查網路。");
-    }
-    }
-    
-
-    function renderLogs(id) {
-        const content = document.getElementById('logContent');
-        const filtered = testLogs.filter(l => l.devID === id);
-        if(filtered.length === 0) {
-            content.innerHTML = "<p style='color:#999'>目前尚無紀錄</p>";
-            return;
+    function deleteDev(index) {
+        if(confirm("確定刪除設備？")) {
+            devices.splice(index, 1);
+            localStorage.setItem('dev_db_v3', JSON.stringify(devices));
+            renderTable();
         }
-        content.innerHTML = filtered.reverse().map(l => `
-            <div class="record-item">
-                <strong>機種: ${l.model}</strong> (使用者: ${l.user})<br>
-                <small>時間: ${l.start.replace('T',' ')} ~ ${l.end.replace('T',' ')}</small>
-            </div>
-        `).join('');
+    }
+
+    function goHome() {
+        // 返回時保留管理員模式 (如果有的話)
+        const url = isAdmin ? window.location.pathname + "?mode=" + ADMIN_PASSWORD : window.location.pathname;
+        window.location.href = url;
     }
 </script>
 </body>
