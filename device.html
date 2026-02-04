@@ -38,7 +38,7 @@
         <h3 style="color:var(--admin); margin-top:0;">🔧 管理員：新增設備</h3>
         <input type="text" id="devName" placeholder="設備名稱">
         <input type="text" id="devID" placeholder="設備編號">
-        <button class="btn-submit" style="background:var(--admin)" onclick="addDevice()">加入清單</button>
+        <button class="btn-submit" style="background:var(--admin)" onclick="addDevice()">新增設備</button>
         
         <table style="margin-top:20px;">
             <thead><tr><th>設備</th><th>操作</th></tr></thead>
@@ -67,7 +67,7 @@
         </div>
 
         <div class="log-list">
-            <h3>📋 本機歷史紀錄</h3>
+            <h3>📋 設備歷史登錄紀錄</h3>
             <div id="logContent"></div>
         </div>
     </div>
@@ -118,7 +118,7 @@
         body.innerHTML = devices.map((d, i) => `
             <tr>
                 <td>${d.name} (${d.id})</td>
-                <td><button class="btn-qr" style="margin:0; padding:5px;" onclick="makeQR('${d.id}', '${d.name}')">產碼</button></td>
+                <td><button class="btn-qr" style="margin:0; padding:5px;" onclick="makeQR('${d.id}', '${d.name}')">QR code</button></td>
             </tr>
         `).join('');
     }
@@ -233,5 +233,6 @@
 </script>
 </body>
 </html>
+
 
 
