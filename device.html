@@ -3,126 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設備管理 - 離線傳輸版</title>
+    <title>設備管理與測試紀錄系統</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-top: 10px; background: #fff; }
-        .info-box { background: #e7f3ff; border-left: 5px solid #2196F3; padding: 15px; margin-top: 20px; }
-        input { width: calc(50% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #28a745; color: white; width: 100%; }
-        .btn-qr { background: #007bff; color: white; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        td, th { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
-        #qrDisplay { text-align: center; display: none; margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
-        #qrcode { display: inline-block; margin-bottom: 10px; }
+        :root { --primary: #007bff; --bg: #f4f7f6; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #fff; }
+        .hidden { display: none; }
+        
+        /* 表單樣式 */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        
+        button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-submit { background: #28a745; color: white; width: 100%; margin-top: 10px; }
+        .btn-qr { background: var(--primary); color: white; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th { background: #f8f9fa; }
+
+        #qrcode { display: inline-block; margin-top: 10px; border: 5px solid white; }
+        .record-item { background: #f9f9f9; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="mainView">
-        <h2>🛠️ 設備管理系統</h2>
+        <h2>🛠️ 設備清單</h2>
         <div class="card">
-            <input type="text" id="devName" placeholder="設備名稱">
-            <input type="text" id="devID" placeholder="設備編號">
-            <button class="btn-add" onclick="addNew()">新增設備並儲存</button>
+            <div class="form-group">
+                <input type="text" id="devName" placeholder="設備名稱 (如: 示波器)">
+                <input type="text" id="devID" placeholder="編號 (如: OSC-01)" style="margin-top:10px;">
+                <button class="btn-submit" onclick="addDevice()">新增設備</button>
+            </div>
         </div>
-
         <table id="deviceTable">
-            <thead><tr><th>編號</th><th>名稱</th><th>QR</th></tr></thead>
-            <tbody id="list"></tbody>
+            <thead><tr><th>編號</th><th>名稱</th><th>操作</th></tr></thead>
+            <tbody id="listBody"></tbody>
         </table>
-
-        <div id="qrDisplay">
+        
+        <div id="qrBox" class="card hidden" style="text-align: center;">
             <h4>設備 QR Code</h4>
             <div id="qrcode"></div>
-            <p id="qrText"></p>
-            <button onclick="document.getElementById('qrDisplay').style.display='none'" style="background:#666; color:#fff">關閉</button>
+            <p id="qrHint" style="font-size:12px; color:#666;"></p>
+            <button onclick="document.getElementById('qrBox').classList.add('hidden')" style="background:#666; color:white;">關閉</button>
         </div>
     </div>
 
-    <div id="detailView" style="display:none;">
-        <div class="info-box">
-            <h2 id="viewName"></h2>
-            <p><strong>設備編號：</strong> <span id="viewID"></span></p>
-            <p><strong>掃描時間：</strong> <span id="viewTime"></span></p>
-            <hr>
-            <p style="font-size: 0.8em; color: #666;">提示：此資訊直接從 QR Code 讀取。</p>
+    <div id="testView" class="hidden">
+        <button onclick="location.href=window.location.pathname" style="background:#6c757d; color:white; margin-bottom:10px;">⬅ 返回清單</button>
+        <div class="card">
+            <h2 id="displayDevName"></h2>
+            <p>編號：<span id="displayDevID"></span></p>
         </div>
-        <button onclick="window.location.href=window.location.pathname" style="margin-top:20px; width:100%;">返回管理頁面</button>
+
+        <div class="card">
+            <h3>📝 填寫測試紀錄</h3>
+            <div class="form-group">
+                <label>測試機種</label>
+                <input type="text" id="testModel" placeholder="輸入機種型號">
+            </div>
+            <div class="form-group">
+                <label>使用者</label>
+                <input type="text" id="testerName" placeholder="輸入姓名">
+            </div>
+            <div class="form-group">
+                <label>起始時間</label>
+                <input type="datetime-local" id="startTime">
+            </div>
+            <div class="form-group">
+                <label>結束時間</label>
+                <input type="datetime-local" id="endTime">
+            </div>
+            <button class="btn-submit" onclick="saveTestLog()">儲存紀錄</button>
+        </div>
+
+        <div id="historyLog">
+            <h3>歷史測試紀錄</h3>
+            <div id="logContent"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    let devices = JSON.parse(localStorage.getItem('devices_v2')) || [];
+    let devices = JSON.parse(localStorage.getItem('dev_db_v3')) || [];
+    let testLogs = JSON.parse(localStorage.getItem('test_logs_v3')) || [];
 
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
-        // 重點：同時讀取 id 和 name 參數
         const id = params.get('id');
         const name = params.get('name');
 
         if (id && name) {
-            showDetail(id, name);
+            showTestPage(id, name);
         } else {
-            renderList();
+            renderTable();
         }
     };
 
-    function addNew() {
+    function addDevice() {
         const name = document.getElementById('devName').value;
         const id = document.getElementById('devID').value;
-        if(!name || !id) return alert("請填寫完整");
-        
+        if(!name || !id) return alert("請輸入資訊");
         devices.push({name, id});
-        localStorage.setItem('devices_v2', JSON.stringify(devices));
-        renderList();
-        document.getElementById('devName').value = '';
-        document.getElementById('devID').value = '';
+        localStorage.setItem('dev_db_v3', JSON.stringify(devices));
+        renderTable();
     }
 
-    function renderList() {
-        const tbody = document.getElementById('list');
-        tbody.innerHTML = devices.map(d => `
+    function renderTable() {
+        const body = document.getElementById('listBody');
+        body.innerHTML = devices.map(d => `
             <tr>
                 <td>${d.id}</td>
                 <td>${d.name}</td>
-                <td><button class="btn-qr" onclick="generate('${d.id}', '${d.name}')">生成</button></td>
+                <td><button class="btn-qr" onclick="makeQR('${d.id}', '${d.name}')">生成 QR</button></td>
             </tr>
         `).join('');
     }
 
-    function generate(id, name) {
-    const qrDiv = document.getElementById("qrcode");
-    qrDiv.innerHTML = "";
-    
-    // 使用 location.origin + location.pathname 獲取不帶參數的純網址
-    const baseUrl = window.location.origin + window.location.pathname;
-    const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+    function makeQR(id, name) {
+        const box = document.getElementById('qrcode');
+        box.innerHTML = "";
+        const baseUrl = window.location.origin + window.location.pathname;
+        const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
 
-    new QRCode(qrDiv, {
-        text: finalUrl,
-        width: 180,
-        height: 180,
-        correctLevel: QRCode.CorrectLevel.H
-    });
-
-        document.getElementById("qrText").innerText = `設備：${name}`;
-        document.getElementById("qrDisplay").style.display = "block";
+        new QRCode(box, { text: finalUrl, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.H });
+        document.getElementById('qrHint').innerText = `掃描以紀錄: ${name}`;
+        document.getElementById('qrBox').classList.remove('hidden');
+        document.getElementById('qrBox').scrollIntoView({behavior:'smooth'});
     }
 
-    function showDetail(id, name) {
-        document.getElementById('mainView').style.display = 'none';
-        document.getElementById('detailView').style.display = 'block';
-        document.getElementById('viewName').innerText = name;
-        document.getElementById('viewID').innerText = id;
-        document.getElementById('viewTime').innerText = new Date().toLocaleString();
+    function showTestPage(id, name) {
+        document.getElementById('mainView').classList.add('hidden');
+        document.getElementById('testView').classList.remove('hidden');
+        document.getElementById('displayDevName').innerText = name;
+        document.getElementById('displayDevID').innerText = id;
+        renderLogs(id);
+    }
+
+    function saveTestLog() {
+        const id = document.getElementById('displayDevID').innerText;
+        const log = {
+            devID: id,
+            model: document.getElementById('testModel').value,
+            user: document.getElementById('testerName').value,
+            start: document.getElementById('startTime').value,
+            end: document.getElementById('endTime').value,
+            timestamp: new Date().toLocaleString()
+        };
+
+        if(!log.model || !log.user || !log.start || !log.end) return alert("所有欄位皆須填寫");
+
+        testLogs.push(log);
+        localStorage.setItem('test_logs_v3', JSON.stringify(testLogs));
+        alert("紀錄已儲存！");
+        renderLogs(id);
+        
+        // 清空表單
+        document.getElementById('testModel').value = '';
+        document.getElementById('testerName').value = '';
+    }
+
+    function renderLogs(id) {
+        const content = document.getElementById('logContent');
+        const filtered = testLogs.filter(l => l.devID === id);
+        if(filtered.length === 0) {
+            content.innerHTML = "<p style='color:#999'>目前尚無紀錄</p>";
+            return;
+        }
+        content.innerHTML = filtered.reverse().map(l => `
+            <div class="record-item">
+                <strong>機種: ${l.model}</strong> (使用者: ${l.user})<br>
+                <small>時間: ${l.start.replace('T',' ')} ~ ${l.end.replace('T',' ')}</small>
+            </div>
+        `).join('');
     }
 </script>
-
 </body>
-
 </html>
