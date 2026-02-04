@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設備管理與紀錄系統</title>
+    <title>設備管理系統 - 固定碼版</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
@@ -12,49 +12,42 @@
         .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .hidden { display: none !important; }
         
-        /* 管理員樣式 */
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
-        
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
         input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         
-        button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; }
         .btn-qr { background: var(--primary); color: white; }
         .btn-edit { background: #ffc107; color: #212529; }
-        .btn-del { background: #dc3545; color: white; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
 
-        /* QR Code 置中彈窗樣式 */
+        /* QR Code 置中彈窗 */
         #qrOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;
+            background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;
         }
         .qr-modal {
             background: white; padding: 30px; border-radius: 15px; text-align: center;
-            max-width: 90%; box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            max-width: 85%; box-shadow: 0 5px 25px rgba(0,0,0,0.5);
         }
-        #qrcode { display: inline-block; padding: 10px; background: white; }
-
-        /* 紀錄顯示區 */
-        .log-item { background: #fff; border-left: 5px solid var(--primary); padding: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        #qrcode { display: inline-block; padding: 10px; background: white; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="adminPanel" class="admin-box hidden">
-        <h3 id="adminTitle" style="color:var(--admin); margin-top:0;">🔧 管理員：新增設備</h3>
+        <h3 id="adminTitle" style="color:var(--admin); margin:0 0 15px 0;">🔧 管理員：新增設備</h3>
         <input type="hidden" id="editIndex" value="-1">
         <input type="text" id="devName" placeholder="設備名稱">
-        <input type="text" id="devID" placeholder="設備編號">
-        <button id="addBtn" class="btn-submit" style="background:var(--admin)" onclick="saveDevice()">加入清單</button>
-        <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消編輯</button>
+        <input type="text" id="devID" placeholder="唯一編號 (印出後不可更改)">
+        <button id="addBtn" class="btn-submit" style="background:var(--admin)" onclick="saveDevice()">確認儲存</button>
+        <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消</button>
         
-        <table style="margin-top:20px;">
-            <thead><tr><th>設備資訊</th><th>操作</th></tr></thead>
+        <table>
+            <thead><tr><th>設備清單</th><th>操作</th></tr></thead>
             <tbody id="adminListBody"></tbody>
         </table>
     </div>
@@ -63,22 +56,22 @@
         <div class="qr-modal" onclick="event.stopPropagation()">
             <h3 id="qrName" style="margin-top:0;"></h3>
             <div id="qrcode"></div>
-            <p id="qrID" style="color:#666; font-size:14px;"></p>
-            <button onclick="closeQR()" style="background:#333; color:white; width:100%;">關閉窗口</button>
+            <p id="qrID" style="color:#666; font-size:14px; margin-bottom:20px;"></p>
+            <button onclick="closeQR()" style="background:#333; color:white; width:100%; padding:12px;">關閉視窗</button>
         </div>
     </div>
 
     <div id="testView" class="hidden">
-        <div style="border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px;">
-            <h2 id="displayDevName" style="margin:0;"></h2>
-            <small id="displayDevID" style="color:#666;"></small>
+        <div style="border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px;">
+            <h2 id="displayDevName" style="margin:0;">載入中...</h2>
+            <small id="displayDevID" style="color:#666; font-weight:bold;"></small>
         </div>
         <div class="card">
-            <label>測試機種</label><input type="text" id="testModel">
-            <label>使用者</label><input type="text" id="testerName">
-            <label>起始時間</label><input type="datetime-local" id="startTime">
-            <label>結束時間</label><input type="datetime-local" id="endTime">
-            <button id="submitBtn" class="btn-submit" onclick="saveToCloud()">送出紀錄</button>
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">測試機種</label><input type="text" id="testModel">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">使用者</label><input type="text" id="testerName">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">起始時間</label><input type="datetime-local" id="startTime">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">結束時間</label><input type="datetime-local" id="endTime">
+            <button id="submitBtn" class="btn-submit" onclick="saveToCloud()">確認送出紀錄</button>
         </div>
         <div class="log-list"><h3>📋 歷史紀錄 (本機)</h3><div id="logContent"></div></div>
     </div>
@@ -87,8 +80,8 @@
 <script>
     const GOOGLE_SCRIPT_URL = "你的API網址"; 
     const ADMIN_PASSWORD = "admin";
-    let devices = JSON.parse(localStorage.getItem('dev_db_v4')) || [];
-    let testLogs = JSON.parse(localStorage.getItem('test_logs_v4')) || [];
+    let devices = JSON.parse(localStorage.getItem('dev_db_v5')) || [];
+    let testLogs = JSON.parse(localStorage.getItem('test_logs_v5')) || [];
 
     window.onload = function() {
         const params = new URLSearchParams(window.location.search);
@@ -96,25 +89,29 @@
             document.getElementById('adminPanel').classList.remove('hidden');
             renderAdminTable();
         }
+        
         const id = params.get('id');
-        const name = params.get('name');
-        if (id && name) showTestPage(id, name);
+        if (id) {
+            // 從清單中找最新名稱，如果找不到則顯示 ID
+            const dev = devices.find(d => d.id === id);
+            showTestPage(id, dev ? dev.name : "未知設備");
+        }
     };
 
-    // 新增或修改設備
     function saveDevice() {
         const name = document.getElementById('devName').value.trim();
         const id = document.getElementById('devID').value.trim();
         const editIndex = parseInt(document.getElementById('editIndex').value);
-        if(!name || !id) return alert("請填寫完整");
+        if(!name || !id) return alert("欄位不可為空");
 
         if(editIndex === -1) {
+            if(devices.find(d => d.id === id)) return alert("編號已存在！");
             devices.push({name, id});
         } else {
             devices[editIndex] = {name, id};
         }
         
-        localStorage.setItem('dev_db_v4', JSON.stringify(devices));
+        localStorage.setItem('dev_db_v5', JSON.stringify(devices));
         resetForm();
         renderAdminTable();
     }
@@ -124,8 +121,7 @@
         document.getElementById('devName').value = dev.name;
         document.getElementById('devID').value = dev.id;
         document.getElementById('editIndex').value = index;
-        document.getElementById('adminTitle').innerText = "✏️ 編輯設備資料";
-        document.getElementById('addBtn').innerText = "儲存修改";
+        document.getElementById('adminTitle').innerText = "✏️ 編輯設備內容";
         document.getElementById('cancelBtn').classList.remove('hidden');
     }
 
@@ -134,27 +130,17 @@
         document.getElementById('devID').value = '';
         document.getElementById('editIndex').value = '-1';
         document.getElementById('adminTitle').innerText = "🔧 管理員：新增設備";
-        document.getElementById('addBtn').innerText = "加入清單";
         document.getElementById('cancelBtn').classList.add('hidden');
-    }
-
-    function deleteDevice(index) {
-        if(confirm("確定刪除此設備？相關 QR Code 將無法在此處再找到。")) {
-            devices.splice(index, 1);
-            localStorage.setItem('dev_db_v4', JSON.stringify(devices));
-            renderAdminTable();
-        }
     }
 
     function renderAdminTable() {
         const body = document.getElementById('adminListBody');
         body.innerHTML = devices.map((d, i) => `
             <tr>
-                <td><strong>${d.name}</strong><br><small>${d.id}</small></td>
+                <td><strong>${d.name}</strong><br><small>ID: ${d.id}</small></td>
                 <td>
                     <button class="btn-qr" onclick="makeQR('${d.id}', '${d.name}')">產碼</button>
                     <button class="btn-edit" onclick="editDevice(${i})">編輯</button>
-                    <button class="btn-del" onclick="deleteDevice(${i})">刪</button>
                 </td>
             </tr>
         `).join('');
@@ -163,10 +149,11 @@
     function makeQR(id, name) {
         document.getElementById('qrcode').innerHTML = "";
         const baseUrl = window.location.origin + window.location.pathname;
-        const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}&name=${encodeURIComponent(name)}`;
+        // 重點：QR Code 網址只帶 ID 參數，不帶名稱參數
+        const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}`;
         new QRCode(document.getElementById('qrcode'), { text: finalUrl, width: 200, height: 200 });
         document.getElementById('qrName').innerText = name;
-        document.getElementById('qrID').innerText = `ID: ${id}`;
+        document.getElementById('qrID').innerText = `掃描代碼: ${id}`;
         document.getElementById('qrOverlay').classList.remove('hidden');
     }
 
@@ -194,15 +181,17 @@
         try {
             await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(log) });
             testLogs.push(log);
-            localStorage.setItem('test_logs_v4', JSON.stringify(testLogs));
-            alert("成功！"); location.reload();
+            localStorage.setItem('test_logs_v5', JSON.stringify(testLogs));
+            alert("✅ 紀錄成功！"); location.reload();
         } catch (e) { alert("失敗"); btn.disabled = false; }
     }
 
     function renderLogs(id) {
         const filtered = testLogs.filter(l => l.id === id).reverse();
         document.getElementById('logContent').innerHTML = filtered.map(l => `
-            <div class="log-item"><strong>${l.model}</strong> (${l.user})<br><small>${l.start} ~ ${l.end}</small></div>
+            <div style="background:#fff; border-left:5px solid var(--primary); padding:10px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <strong>${l.model}</strong> (${l.user})<br><small>${l.start} ~ ${l.end}</small>
+            </div>
         `).join('');
     }
 </script>
