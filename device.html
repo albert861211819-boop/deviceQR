@@ -145,28 +145,49 @@
         renderLogs(id);
     }
 
-    function saveTestLog() {
-        const id = document.getElementById('displayDevID').innerText;
-        const log = {
-            devID: id,
-            model: document.getElementById('testModel').value,
-            user: document.getElementById('testerName').value,
-            start: document.getElementById('startTime').value,
-            end: document.getElementById('endTime').value,
-            timestamp: new Date().toLocaleString()
-        };
 
-        if(!log.model || !log.user || !log.start || !log.end) return alert("所有欄位皆須填寫");
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysE22tyQy4bra1DsHloJ7Bq6vGDxEt_oDguO2nq1fu0o1HVFRQs-GnvdmHEv_lLRI/exec";
 
-        testLogs.push(log);
-        localStorage.setItem('test_logs_v3', JSON.stringify(testLogs));
-        alert("紀錄已儲存！");
-        renderLogs(id);
+    async function saveTestLog() {
+    const id = document.getElementById('displayDevID').innerText;
+    const name = document.getElementById('displayDevName').innerText;
+    
+    const logData = {
+        id: id,
+        name: name,
+        model: document.getElementById('testModel').value,
+        user: document.getElementById('testerName').value,
+        start: document.getElementById('startTime').value,
+        end: document.getElementById('endTime').value
+    };
+
+    if(!logData.model || !logData.user || !logData.start || !logData.end) {
+        return alert("請填寫所有欄位");
+    }
+
+    // 顯示轉圈圈或提示
+    alert("正在同步至雲端，請稍候...");
+
+    try {
+        // 使用 fetch 將資料傳給 Google Script
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors", // 避開跨網域問題
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(logData)
+        });
+
+        alert("✅ 資料已成功同步至 Google 試算表！");
         
-        // 清空表單
+        // 清空欄位
         document.getElementById('testModel').value = '';
         document.getElementById('testerName').value = '';
+    } catch (error) {
+        console.error("同步失敗:", error);
+        alert("❌ 雲端同步失敗，請檢查網路。");
     }
+    }
+    
 
     function renderLogs(id) {
         const content = document.getElementById('logContent');
