@@ -176,17 +176,47 @@
     function closeQR() { document.getElementById('qrOverlay').classList.add('hidden'); }
 
     // 使用者功能
-    async function showTestPage(id, name) {
+    async function showTestPage(id) {
     document.getElementById('testView').classList.remove('hidden');
-    // 在網頁最上方顯示「目前編輯的設備名稱」
-    document.getElementById('displayDevName').innerText = "📍 目前設備：" + name;
     document.getElementById('displayDevID').innerText = "設備編號：" + id;
-    
-    // 清除舊紀錄顯示，開始抓取雲端最新資料
-    document.getElementById('logContent').innerHTML = "<div class='loading-text'>讀取雲端歷史紀錄中...</div>";
-    
-    fetchCloudLogs(id);
+    document.getElementById('displayDevName').innerText = "名稱抓取中...";
+
+    try {
+        // 從雲端抓取「清單 (type=list)」
+        const response = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
+        const listData = await response.json();
+        
+        // 在清單中搜尋該 ID 對應的名稱
+        const device = listData.find(row => row[0].toString() === id.toString());
+        
+        if (device) {
+            document.getElementById('displayDevName').innerText = "📍 目前設備：" + device[1];
+        } else {
+            document.getElementById('displayDevName').innerText = "📍 未知設備 (請管理員先新增)";
+        }
+    } catch (e) {
+        document.getElementById('displayDevName').innerText = "📍 連線失敗，請檢查網路";
     }
+
+    fetchCloudLogs(id); // 抓取該設備的歷史紀錄
+}
+
+// 修改管理員新增設備的函數，讓它同步到雲端
+async function saveDevice() {
+    const name = document.getElementById('devName').value.trim();
+    const id = document.getElementById('devID').value.trim();
+    if(!name || !id) return alert("請填寫完整");
+
+    // 送交雲端存檔
+    await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify({ action: "saveDevice", id: id, name: name })
+    });
+
+    alert("設備已建立並同步至雲端清單！");
+    location.reload(); 
+}
 
     // 重點：直接從 Google 抓取該設備所有紀錄
     async function fetchCloudLogs(id) {
@@ -241,4 +271,5 @@
 </script>
 </body>
 </html>
+
 
