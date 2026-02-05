@@ -189,26 +189,50 @@
     }
 
     async function fetchCloudLogs(id) {
-        try {
-            const res = await fetch(GOOGLE_SCRIPT_URL);
-            const data = await res.json();
-            // 跳過標題並篩選
-            const rows = data.slice(1).filter(r => r[0].toString() === id.toString()).reverse();
-            const content = document.getElementById('logContent');
-            
-            if(rows.length === 0) {
-                content.innerHTML = "<p style='text-align:center; color:#999;'>尚無紀錄</p>";
-                return;
-            }
+    try {
+        const res = await fetch(GOOGLE_SCRIPT_URL);
+        const data = await res.json();
+        
+        // 跳過標題列並篩選 ID
+        const rows = data.slice(1).filter(r => r[0].toString() === id.toString()).reverse();
+        const content = document.getElementById('logContent');
+        
+        if(rows.length === 0) {
+            content.innerHTML = "<p style='text-align:center; color:#999;'>尚無紀錄</p>";
+            return;
+        }
 
-            content.innerHTML = rows.map(r => `
-                <div class="log-item">
-                    <div class="log-header"><span>機種: ${r[2]}</span><span>使用者: ${r[3]}</span></div>
-                    <div class="log-time">時段: ${r[4]} ～ ${r[5]}</div>
+        // 定義一個內部函數來處理時間格式化
+        const formatDateTime = (dateStr) => {
+            if (!dateStr) return "";
+            const d = new Date(dateStr);
+            // 檢查是否為有效日期
+            if (isNaN(d.getTime())) return dateStr; 
+
+            const Y = d.getFullYear();
+            const M = String(d.getMonth() + 1).padStart(2, '0');
+            const D = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0'); // 24小時制
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            
+            return `${Y}-${M}-${D} ${hh}:${mm}`;
+        };
+
+        content.innerHTML = rows.map(r => `
+            <div class="log-item">
+                <div class="log-header">
+                    <span>機種: ${r[2]}</span>
+                    <span>使用者: ${r[3]}</span>
                 </div>
-            `).join('');
-        } catch (e) { console.error("抓取紀錄失敗"); }
+                <div class="log-time">
+                    時段: ${formatDateTime(r[4])} ～ ${formatDateTime(r[5])}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error("抓取紀錄失敗", e);
     }
+}
 
     async function saveToLog() {
     // 【修正點】使用 replace 移除掉標籤文字，只存入純粹的值
@@ -247,5 +271,6 @@
 </script>
 </body>
 </html>
+
 
 
