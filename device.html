@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設備管理與紀錄同步系統</title>
+    <title>雲端同步設備管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
@@ -12,50 +12,42 @@
         .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .hidden { display: none !important; }
         
+        /* 管理員樣式 */
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
         input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { background: #28a745; color: white; width: 100%; font-size: 16px; padding: 12px; }
+        .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; }
         .btn-qr { background: var(--primary); color: white; }
         .btn-edit { background: #ffc107; color: #212529; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #eee; padding: 10px; text-align: left; }
+        th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
 
-        /* QR Code 置中彈窗 */
+        /* QR Code 彈窗 */
         #qrOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000;
         }
-        .qr-modal {
-            background: white; padding: 30px; border-radius: 15px; text-align: center;
-            max-width: 85%; box-shadow: 0 5px 30px rgba(0,0,0,0.5);
-        }
-        #qrcode { display: inline-block; padding: 10px; background: white; border: 1px solid #eee; margin-bottom: 10px; }
+        .qr-modal { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 85%; }
 
-        /* 雲端紀錄列表 */
-        .log-list h3 { border-left: 5px solid var(--primary); padding-left: 10px; margin-top: 25px; }
-        .log-item { background: #f8f9fa; border: 1px solid #eee; padding: 12px; margin-bottom: 10px; border-radius: 6px; font-size: 14px; }
-        .log-header { display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--primary); font-weight: bold; }
+        /* 紀錄樣式 */
+        .log-item { background: #f8f9fa; border-left: 5px solid var(--primary); padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+        .log-header { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; justify-content: space-between; }
         .log-time { font-size: 12px; color: #666; }
-        .loading-text { text-align: center; color: #999; padding: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="adminPanel" class="admin-box hidden">
-        <h3 id="adminTitle" style="color:var(--admin); margin:0 0 15px 0;">🔧 管理員模式</h3>
-        <input type="hidden" id="editIndex" value="-1">
-        <input type="text" id="devName" placeholder="設備名稱 (如: 示波器 A)">
-        <input type="text" id="devID" placeholder="唯一編號 (如: OSC-01)">
-        <button id="addBtn" class="btn-submit" style="background:var(--admin)" onclick="saveDevice()">儲存設備資料</button>
-        <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消編輯</button>
+        <h3 id="adminTitle" style="color:var(--admin); margin-top:0;">🔧 設備管理清單</h3>
+        <input type="text" id="devName" placeholder="輸入設備名稱">
+        <input type="text" id="devID" placeholder="輸入編號 (ID)">
+        <button id="addBtn" class="btn-submit" onclick="saveDevice()">同步至雲端</button>
+        <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消</button>
         
         <table>
-            <thead><tr><th>設備</th><th>操作</th></tr></thead>
+            <thead><tr><th>設備資訊</th><th>操作</th></tr></thead>
             <tbody id="adminListBody"></tbody>
         </table>
     </div>
@@ -64,7 +56,7 @@
         <div class="qr-modal" onclick="event.stopPropagation()">
             <h3 id="qrName" style="margin-top:0;"></h3>
             <div id="qrcode"></div>
-            <p id="qrID" style="color:#666; font-size:13px;"></p>
+            <p id="qrID" style="color:#666; font-size:14px;"></p>
             <button onclick="closeQR()" style="background:#333; color:white; width:100%; padding:10px;">關閉視窗</button>
         </div>
     </div>
@@ -72,238 +64,186 @@
     <div id="testView" class="hidden">
         <div style="border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px;">
             <h2 id="displayDevName" style="margin:0;">載入中...</h2>
-            <small id="displayDevID" style="color:#666; font-weight:bold;"></small>
+            <small id="displayDevID" style="color:#666;"></small>
         </div>
 
         <div class="card">
-            <label>測試機種</label><input type="text" id="testModel" placeholder="輸入產品型號">
-            <label>使用者</label><input type="text" id="testerName" placeholder="填寫姓名">
-            <label>起始時間</label><input type="datetime-local" id="startTime">
-            <label>結束時間</label><input type="datetime-local" id="endTime">
-            <button id="submitBtn" class="btn-submit" onclick="saveToCloud()">確認並送出紀錄</button>
+            <input type="text" id="testModel" placeholder="機種型號">
+            <input type="text" id="testerName" placeholder="使用者姓名">
+            <label style="font-size:12px;">開始時間</label><input type="datetime-local" id="startTime">
+            <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
+            <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
 
         <div class="log-list">
-            <h3>📊 設備歷史紀錄 (雲端同步)</h3>
-            <div id="logContent"><div class="loading-text">正在從雲端抓取歷史資料...</div></div>
+            <h3>📊 歷史紀錄 (雲端)</h3>
+            <div id="logContent"><p style="text-align:center; color:#999;">正在連線雲端資料庫...</p></div>
         </div>
     </div>
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbysE22tyQy4bra1DsHloJ7Bq6vGDxEt_oDguO2nq1fu0o1HVFRQs-GnvdmHEv_lLRI/exec"; // ⬅ 務必填入你的 GAS 網頁應用程式網址
+    const GOOGLE_SCRIPT_URL = "你的API網址"; // ⬅ 替換為你的 GAS URL
     const ADMIN_PASSWORD = "admin";
-    let devices = JSON.parse(localStorage.getItem('dev_db_v6')) || [];
 
-   window.onload = async function() {
-    const params = new URLSearchParams(window.location.search);
-    const isAdmin = params.get('mode') === ADMIN_PASSWORD;
-    const id = params.get('id');
+    window.onload = async function() {
+        const params = new URLSearchParams(window.location.search);
+        const isAdmin = params.get('mode') === ADMIN_PASSWORD;
+        const id = params.get('id');
 
-    if (isAdmin) {
-        document.getElementById('adminPanel').classList.remove('hidden');
-        // 管理員進入時，直接從雲端抓取最新清單
-        await refreshAdminList();
-    }
-    
-    if (id) {
-        showTestPage(id); // 使用先前寫的 showTestPage，它會去雲端抓名稱
-    }
-};
+        if (isAdmin) {
+            document.getElementById('adminPanel').classList.remove('hidden');
+            refreshAdminList();
+        }
+        
+        if (id) {
+            showTestPage(id);
+        }
+    };
 
-    // 管理員功能
-    function saveDevice() {
+    // --- 管理員函數 ---
+    async function saveDevice() {
         const name = document.getElementById('devName').value.trim();
         const id = document.getElementById('devID').value.trim();
-        const editIndex = parseInt(document.getElementById('editIndex').value);
         if(!name || !id) return alert("請填寫完整");
 
-        if(editIndex === -1) {
-            if(devices.find(d => d.id === id)) return alert("ID 已存在");
-            devices.push({name, id});
-        } else {
-            devices[editIndex] = {name, id};
+        const btn = document.getElementById('addBtn');
+        btn.innerText = "同步中...";
+        btn.disabled = true;
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST", mode: "no-cors",
+                body: JSON.stringify({ action: "saveDevice", id: id, name: name })
+            });
+            alert("雲端清單更新成功！");
+            location.reload();
+        } catch (e) {
+            alert("同步失敗");
+            btn.disabled = false;
         }
-        localStorage.setItem('dev_db_v6', JSON.stringify(devices));
-        resetForm(); renderAdminTable();
     }
 
-    function editDevice(index) {
-        const d = devices[index];
-        document.getElementById('devName').value = d.name;
-        document.getElementById('devID').value = d.id;
-        document.getElementById('editIndex').value = index;
+    async function refreshAdminList() {
+        try {
+            const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
+            const data = await res.json();
+            const body = document.getElementById('adminListBody');
+            
+            // 跳過標題列並過濾空資料
+            const rows = data.slice(1).filter(r => r[0]); 
+            body.innerHTML = rows.map(r => `
+                <tr>
+                    <td><strong>${r[1]}</strong><br><small>ID: ${r[0]}</small></td>
+                    <td>
+                        <button class="btn-qr" onclick="makeQR('${r[0]}', '${r[1]}')">碼</button>
+                        <button class="btn-edit" onclick="fillForm('${r[0]}', '${r[1]}')">改</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error("抓取清單失敗"); }
+    }
+
+    function fillForm(id, name) {
+        document.getElementById('devID').value = id;
+        document.getElementById('devName').value = name;
         document.getElementById('adminTitle').innerText = "✏️ 編輯設備";
+        document.getElementById('addBtn').innerText = "儲存修改";
         document.getElementById('cancelBtn').classList.remove('hidden');
     }
 
     function resetForm() {
-        document.getElementById('devName').value = '';
         document.getElementById('devID').value = '';
-        document.getElementById('editIndex').value = '-1';
-        document.getElementById('adminTitle').innerText = "🔧 管理員模式";
+        document.getElementById('devName').value = '';
+        document.getElementById('adminTitle').innerText = "🔧 設備管理清單";
+        document.getElementById('addBtn').innerText = "同步至雲端";
         document.getElementById('cancelBtn').classList.add('hidden');
     }
-   async function refreshAdminList() {
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
-        const listData = await response.json();
-        
-        const body = document.getElementById('adminListBody');
-        
-        // 【修正點】: listData.slice(1) 會跳過第一列「設備編號, 設備名稱」
-        // 同時過濾掉空行，確保表格乾淨
-        const dataRows = listData.slice(1).filter(row => row[0] !== "" && row[0] !== undefined);
 
-        if (dataRows.length === 0) {
-            body.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">目前無設備資料</td></tr>';
-            return;
-        }
-
-        body.innerHTML = dataRows.map((row) => `
-            <tr>
-                <td><strong>${row[1]}</strong><br><small>ID: ${row[0]}</small></td>
-                <td>
-                    <button class="btn-qr" onclick="makeQR('${row[0]}', '${row[1]}')">產碼</button>
-                    <button class="btn-edit" onclick="fillEditForm('${row[0]}', '${row[1]}')">修改</button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (e) {
-        console.error("無法載入雲端清單");
-    }
-}
-    function renderAdminTable() {
-        const body = document.getElementById('adminListBody');
-        body.innerHTML = devices.map((d, i) => `
-            <tr>
-                <td><strong>${d.name}</strong><br><small>${d.id}</small></td>
-                <td>
-                    <button class="btn-qr" onclick="makeQR('${d.id}', '${d.name}')">碼</button>
-                    <button class="btn-edit" onclick="editDevice(${i})">改</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
+    // --- QR Code 彈窗 ---
     function makeQR(id, name) {
         document.getElementById('qrcode').innerHTML = "";
-        const baseUrl = window.location.origin + window.location.pathname;
-        const finalUrl = `${baseUrl}?id=${encodeURIComponent(id)}`;
-        new QRCode(document.getElementById('qrcode'), { text: finalUrl, width: 200, height: 200 });
+        const url = window.location.origin + window.location.pathname + "?id=" + encodeURIComponent(id);
+        new QRCode(document.getElementById('qrcode'), { text: url, width: 200, height: 200 });
         document.getElementById('qrName').innerText = name;
-        document.getElementById('qrID').innerText = `ID: ${id}`;
+        document.getElementById('qrID').innerText = "ID: " + id;
         document.getElementById('qrOverlay').classList.remove('hidden');
     }
-    
-    function fillEditForm(id, name) {
-    document.getElementById('devID').value = id;
-    document.getElementById('devName').value = name;
-    document.getElementById('adminTitle').innerText = "✏️ 編輯現有設備";
-    document.getElementById('addBtn').innerText = "儲存修改";
-    }
-    
+
     function closeQR() { document.getElementById('qrOverlay').classList.add('hidden'); }
 
-    // 使用者功能
+    // --- 使用者函數 ---
     async function showTestPage(id) {
-    document.getElementById('testView').classList.remove('hidden');
-    document.getElementById('displayDevID').innerText = "設備編號：" + id;
-    document.getElementById('displayDevName').innerText = "名稱抓取中...";
+        document.getElementById('testView').classList.remove('hidden');
+        document.getElementById('displayDevID').innerText = "編號：" + id;
 
-    try {
-        // 從雲端抓取「清單 (type=list)」
-        const response = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
-        const listData = await response.json();
-        
-        // 在清單中搜尋該 ID 對應的名稱
-        const device = listData.find(row => row[0].toString() === id.toString());
-        
-        if (device) {
-            document.getElementById('displayDevName').innerText = "📍 目前設備：" + device[1];
-        } else {
-            document.getElementById('displayDevName').innerText = "📍 未知設備 (請管理員先新增)";
-        }
-    } catch (e) {
-        document.getElementById('displayDevName').innerText = "📍 連線失敗，請檢查網路";
+        try {
+            // 抓取名稱
+            const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
+            const list = await res.json();
+            const dev = list.slice(1).find(r => r[0].toString() === id.toString());
+            document.getElementById('displayDevName').innerText = dev ? dev[1] : "新設備 (ID: "+id+")";
+        } catch (e) { document.getElementById('displayDevName').innerText = "網路連線異常"; }
+
+        fetchCloudLogs(id);
     }
 
-    fetchCloudLogs(id); // 抓取該設備的歷史紀錄
-}
-
-// 修改管理員新增設備的函數，讓它同步到雲端
-async function saveDevice() {
-    const name = document.getElementById('devName').value.trim();
-    const id = document.getElementById('devID').value.trim();
-    if(!name || !id) return alert("請填寫完整");
-
-    // 送交雲端存檔
-    await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify({ action: "saveDevice", id: id, name: name })
-    });
-
-    alert("設備已建立並同步至雲端清單！");
-    location.reload(); 
-}
-
-    // 重點：直接從 Google 抓取該設備所有紀錄
     async function fetchCloudLogs(id) {
         try {
-            const response = await fetch(GOOGLE_SCRIPT_URL);
-            const allData = await response.json();
-            // 假設試算表格式: ID, 名稱, 機種, 使用者, 開始, 結束, 上傳時間
-            // 篩選 ID 一致的資料並反轉（最新的在上面）
-            const filtered = allData.slice(1).filter(row => row[0] && row[0].toString() === id.toString()).reverse();
+            const res = await fetch(GOOGLE_SCRIPT_URL);
+            const data = await res.json();
+            // 跳過標題並篩選
+            const rows = data.slice(1).filter(r => r[0].toString() === id.toString()).reverse();
+            const content = document.getElementById('logContent');
             
-            const logContent = document.getElementById('logContent');
-            if (filtered.length === 0) {
-                logContent.innerHTML = "<div class='loading-text'>目前尚無雲端紀錄</div>";
+            if(rows.length === 0) {
+                content.innerHTML = "<p style='text-align:center; color:#999;'>尚無紀錄</p>";
                 return;
             }
 
-            logContent.innerHTML = filtered.map(row => `
+            content.innerHTML = rows.map(r => `
                 <div class="log-item">
-                    <div class="log-header">
-                        <span>機種: ${row[2]}</span>
-                        <span>使用者: ${row[3]}</span>
-                    </div>
-                    <div class="log-time">時段: ${row[4].replace('T',' ')} ～ ${row[5].replace('T',' ')}</div>
+                    <div class="log-header"><span>機種: ${r[2]}</span><span>使用者: ${r[3]}</span></div>
+                    <div class="log-time">時段: ${r[4]} ～ ${r[5]}</div>
                 </div>
             `).join('');
-        } catch (e) {
-            document.getElementById('logContent').innerHTML = "<div class='loading-text' style='color:red;'>無法讀取雲端資料，請檢查網路。</div>";
-        }
+        } catch (e) { console.error("抓取紀錄失敗"); }
     }
 
-    async function saveToCloud() {
-        const btn = document.getElementById('submitBtn');
-        const log = {
-            id: document.getElementById('displayDevID').innerText,
-            name: document.getElementById('displayDevName').innerText,
-            model: document.getElementById('testModel').value,
-            user: document.getElementById('testerName').value,
-            start: document.getElementById('startTime').value,
-            end: document.getElementById('endTime').value
-        };
-        if(!log.model || !log.user || !log.start || !log.end) return alert("請完整填寫欄位");
-        
-        btn.disabled = true; btn.innerText = "同步中...";
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(log) });
-            alert("✅ 紀錄已成功上傳！");
-            location.reload(); // 重新整理以抓取最新列表
-        } catch (e) {
-            alert("連線失敗"); btn.disabled = false; btn.innerText = "確認並送出紀錄";
-        }
+    async function saveToLog() {
+    // 【修正點】使用 replace 移除掉標籤文字，只存入純粹的值
+    const rawId = document.getElementById('displayDevID').innerText;
+    const rawName = document.getElementById('displayDevName').innerText;
+
+    const log = {
+        // 移除 "編號："，只留下 ID (例如 OSC-01)
+        id: rawId.replace("編號：", "").trim(),
+        // 移除 "📍 目前設備："，只留下名稱 (例如 示波器 A)
+        name: rawName.replace("📍 目前設備：", "").trim(),
+        model: document.getElementById('testModel').value.trim(),
+        user: document.getElementById('testerName').value.trim(),
+        start: document.getElementById('startTime').value,
+        end: document.getElementById('endTime').value
+    };
+
+    if(!log.model || !log.user || !log.start || !log.end) return alert("請完整填寫紀錄");
+
+    const btn = document.getElementById('submitBtn');
+    btn.innerText = "送出中..."; btn.disabled = true;
+
+    try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST", mode: "no-cors",
+            body: JSON.stringify(log)
+        });
+        alert("✅ 紀錄成功上傳！");
+        location.reload();
+    } catch (e) { 
+        alert("送出失敗"); 
+        btn.disabled = false; 
+        btn.innerText = "確認送出紀錄";
     }
+}
 </script>
 </body>
 </html>
-
-
-
-
-
-
