@@ -95,19 +95,26 @@
     const ADMIN_PASSWORD = "admin";
     let devices = JSON.parse(localStorage.getItem('dev_db_v6')) || [];
 
-    window.onload = function() {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('mode') === ADMIN_PASSWORD) {
-            document.getElementById('adminPanel').classList.remove('hidden');
-            renderAdminTable();
-        }
+   window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    const isAdmin = params.get('mode') === ADMIN_PASSWORD;
+    const id = params.get('id');
+
+    if (isAdmin) {
+        document.getElementById('adminPanel').classList.remove('hidden');
+        renderAdminTable();
+    }
+    
+    if (id) {
+        // 【核心修正】：從本機儲存的設備清單中，根據 ID 找回對應的名稱
+        const dev = devices.find(d => d.id === id);
+        const nameToDisplay = dev ? dev.name : "未知設備 (ID: " + id + ")";
         
-        const id = params.get('id');
-        if (id) {
-            const dev = devices.find(d => d.id === id);
-            showTestPage(id, dev ? dev.name : id);
-        }
-    };
+        showTestPage(id, nameToDisplay);
+    } else if (!isAdmin) {
+        document.getElementById('noDataHint').classList.remove('hidden');
+    }
+};
 
     // 管理員功能
     function saveDevice() {
@@ -170,10 +177,15 @@
 
     // 使用者功能
     async function showTestPage(id, name) {
-        document.getElementById('testView').classList.remove('hidden');
-        document.getElementById('displayDevName').innerText = name;
-        document.getElementById('displayDevID').innerText = id;
-        fetchCloudLogs(id);
+    document.getElementById('testView').classList.remove('hidden');
+    // 在網頁最上方顯示「目前編輯的設備名稱」
+    document.getElementById('displayDevName').innerText = "📍 目前設備：" + name;
+    document.getElementById('displayDevID').innerText = "設備編號：" + id;
+    
+    // 清除舊紀錄顯示，開始抓取雲端最新資料
+    document.getElementById('logContent').innerHTML = "<div class='loading-text'>讀取雲端歷史紀錄中...</div>";
+    
+    fetchCloudLogs(id);
     }
 
     // 重點：直接從 Google 抓取該設備所有紀錄
@@ -229,3 +241,4 @@
 </script>
 </body>
 </html>
+
