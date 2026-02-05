@@ -144,14 +144,23 @@
         document.getElementById('adminTitle').innerText = "🔧 管理員模式";
         document.getElementById('cancelBtn').classList.add('hidden');
     }
-    async function refreshAdminList() {
+   async function refreshAdminList() {
     try {
         const response = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
         const listData = await response.json();
         
         const body = document.getElementById('adminListBody');
-        // 排除第一列標題，渲染其餘設備
-        body.innerHTML = listData.slice(1).map((row, i) => `
+        
+        // 【修正點】: listData.slice(1) 會跳過第一列「設備編號, 設備名稱」
+        // 同時過濾掉空行，確保表格乾淨
+        const dataRows = listData.slice(1).filter(row => row[0] !== "" && row[0] !== undefined);
+
+        if (dataRows.length === 0) {
+            body.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#999;">目前無設備資料</td></tr>';
+            return;
+        }
+
+        body.innerHTML = dataRows.map((row) => `
             <tr>
                 <td><strong>${row[1]}</strong><br><small>ID: ${row[0]}</small></td>
                 <td>
@@ -246,7 +255,7 @@ async function saveDevice() {
             const allData = await response.json();
             // 假設試算表格式: ID, 名稱, 機種, 使用者, 開始, 結束, 上傳時間
             // 篩選 ID 一致的資料並反轉（最新的在上面）
-            const filtered = allData.slice(1).filter(row => row[0] == id).reverse();
+            const filtered = allData.slice(1).filter(row => row[0] && row[0].toString() === id.toString()).reverse();
             
             const logContent = document.getElementById('logContent');
             if (filtered.length === 0) {
@@ -292,6 +301,7 @@ async function saveDevice() {
 </script>
 </body>
 </html>
+
 
 
 
