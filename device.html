@@ -43,7 +43,7 @@
         <h3 id="adminTitle" style="color:var(--admin); margin-top:0;">🔧 設備管理清單</h3>
         <input type="text" id="devName" placeholder="輸入設備名稱">
         <input type="text" id="devID" placeholder="輸入編號 (ID)">
-        <button id="addBtn" class="btn-submit" onclick="saveDevice()">同步至雲端</button>
+        <button id="addBtn" class="btn-submit" onclick="saveDevice()">新增設備</button>
         <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消</button>
         
         <table>
@@ -68,7 +68,7 @@
         </div>
 
         <div class="card">
-            <input type="text" id="testModel" placeholder="機種型號">
+            <input type="text" id="testModel" placeholder="機種型號(無產品請填月初檢查)">
             <input type="text" id="testerName" placeholder="使用者姓名">
             <label style="font-size:12px;">開始時間</label><input type="datetime-local" id="startTime"><br>
             <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
@@ -134,7 +134,7 @@
         </div>
 
         <div class="log-list">
-            <h3>📊 歷史紀錄 (雲端)</h3>
+            <h3>📊 近期紀錄</h3>
             <div id="logContent"><p style="text-align:center; color:#999;">正在連線雲端資料庫...</p></div>
         </div>
     </div>
@@ -335,6 +335,7 @@
 </script>
 </body>
 </html>
+
 
 
 
