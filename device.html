@@ -72,6 +72,64 @@
             <input type="text" id="testerName" placeholder="使用者姓名">
             <label style="font-size:12px;">開始時間</label><input type="datetime-local" id="startTime"><br>
             <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
+            <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+        <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
+        <div id="checkItems">
+            <style>
+                .check-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 14px; border-bottom: 1px dashed #f0f0f0; padding-bottom: 8px; }
+                .check-label { flex: 1; padding-right: 10px; line-height: 1.4; }
+                .check-options { display: flex; gap: 10px; }
+                .check-options label { font-size: 13px; font-weight: normal; cursor: pointer; }
+            </style>
+
+            <div class="check-row">
+    <div class="check-label">1. 電源是否正常？(Input V ± 10%)</div>
+    <div class="check-options">
+        <label><input type="radio" name="q1" value="正常" checked> 正常</label>
+        <label><input type="radio" name="q1" value="異常"> 異常</label>
+    </div>
+</div>
+
+<div class="check-row">
+    <div class="check-label">2. 水槽及水位器，水位是否正常？</div>
+    <div class="check-options">
+        <label><input type="radio" name="q2" value="正常" checked> 正常</label>
+        <label><input type="radio" name="q2" value="異常"> 異常</label>
+    </div>
+</div>
+
+<div class="check-row">
+    <div class="check-label">3. 感濕棉布是否潔淨，吸水性是否良好？</div>
+    <div class="check-options">
+        <label><input type="radio" name="q3" value="正常" checked> 正常</label>
+        <label><input type="radio" name="q3" value="異常"> 異常</label>
+    </div>
+</div>
+
+<div class="check-row">
+    <div class="check-label">4. 溼度保護器是否設定於 130℃~150℃ 間？</div>
+    <div class="check-options">
+        <label><input type="radio" name="q4" value="正常" checked> 正常</label>
+        <label><input type="radio" name="q4" value="異常"> 異常</label>
+    </div>
+</div>
+
+<div class="check-row">
+    <div class="check-label">5. 蒸餾水是否足夠？</div>
+    <div class="check-options">
+        <label><input type="radio" name="q5" value="正常" checked> 正常</label>
+        <label><input type="radio" name="q5" value="異常"> 異常</label>
+    </div>
+</div>
+
+<div class="check-row">
+    <div class="check-label">6. 環境溫溼度是否合乎規定？</div>
+    <div class="check-options">
+        <label><input type="radio" name="q6" value="正常" checked> 正常</label>
+        <label><input type="radio" name="q6" value="異常"> 異常</label>
+    </div>
+</div>
+        </div>
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
 
@@ -235,42 +293,49 @@
 }
 
     async function saveToLog() {
-    // 【修正點】使用 replace 移除掉標籤文字，只存入純粹的值
     const rawId = document.getElementById('displayDevID').innerText;
     const rawName = document.getElementById('displayDevName').innerText;
+    const getVal = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
 
     const log = {
-        // 移除 "編號："，只留下 ID (例如 OSC-01)
+        action: "saveLog", // 確保 GAS 知道這是存紀錄
         id: rawId.replace("編號：", "").trim(),
-        // 移除 "📍 目前設備："，只留下名稱 (例如 示波器 A)
         name: rawName.replace("📍 目前設備：", "").trim(),
         model: document.getElementById('testModel').value.trim(),
         user: document.getElementById('testerName').value.trim(),
         start: document.getElementById('startTime').value,
-        end: document.getElementById('endTime').value
+        end: document.getElementById('endTime').value,
+        // 分開抓取每一個值
+        q1: getVal('q1'),
+        q2: getVal('q2'),
+        q3: getVal('q3'),
+        q4: getVal('q4'),
+        q5: getVal('q5'),
+        q6: getVal('q6')
     };
 
     if(!log.model || !log.user || !log.start || !log.end) return alert("請完整填寫紀錄");
 
     const btn = document.getElementById('submitBtn');
-    btn.innerText = "送出中..."; btn.disabled = true;
+    btn.innerText = "同步紀錄中..."; btn.disabled = true;
 
     try {
         await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST", mode: "no-cors",
             body: JSON.stringify(log)
         });
-        alert("✅ 紀錄成功上傳！");
+        alert("✅ 點檢紀錄已成功分開存入雲端！");
         location.reload();
-    } catch (e) { 
-        alert("送出失敗"); 
-        btn.disabled = false; 
+    } catch (e) {
+        alert("送出失敗，請檢查網路。");
+        btn.disabled = false;
         btn.innerText = "確認送出紀錄";
     }
 }
 </script>
 </body>
 </html>
+
 
 
 
