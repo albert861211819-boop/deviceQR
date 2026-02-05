@@ -95,24 +95,19 @@
     const ADMIN_PASSWORD = "admin";
     let devices = JSON.parse(localStorage.getItem('dev_db_v6')) || [];
 
-   window.onload = function() {
+   window.onload = async function() {
     const params = new URLSearchParams(window.location.search);
     const isAdmin = params.get('mode') === ADMIN_PASSWORD;
     const id = params.get('id');
 
     if (isAdmin) {
         document.getElementById('adminPanel').classList.remove('hidden');
-        renderAdminTable();
+        // 管理員進入時，直接從雲端抓取最新清單
+        await refreshAdminList();
     }
     
     if (id) {
-        // 【核心修正】：從本機儲存的設備清單中，根據 ID 找回對應的名稱
-        const dev = devices.find(d => d.id === id);
-        const nameToDisplay = dev ? dev.name : "未知設備 (ID: " + id + ")";
-        
-        showTestPage(id, nameToDisplay);
-    } else if (!isAdmin) {
-        document.getElementById('noDataHint').classList.remove('hidden');
+        showTestPage(id); // 使用先前寫的 showTestPage，它會去雲端抓名稱
     }
 };
 
@@ -149,7 +144,26 @@
         document.getElementById('adminTitle').innerText = "🔧 管理員模式";
         document.getElementById('cancelBtn').classList.add('hidden');
     }
-
+    async function refreshAdminList() {
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
+        const listData = await response.json();
+        
+        const body = document.getElementById('adminListBody');
+        // 排除第一列標題，渲染其餘設備
+        body.innerHTML = listData.slice(1).map((row, i) => `
+            <tr>
+                <td><strong>${row[1]}</strong><br><small>ID: ${row[0]}</small></td>
+                <td>
+                    <button class="btn-qr" onclick="makeQR('${row[0]}', '${row[1]}')">產碼</button>
+                    <button class="btn-edit" onclick="fillEditForm('${row[0]}', '${row[1]}')">修改</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error("無法載入雲端清單");
+    }
+}
     function renderAdminTable() {
         const body = document.getElementById('adminListBody');
         body.innerHTML = devices.map((d, i) => `
@@ -172,7 +186,14 @@
         document.getElementById('qrID').innerText = `ID: ${id}`;
         document.getElementById('qrOverlay').classList.remove('hidden');
     }
-
+    
+    function fillEditForm(id, name) {
+    document.getElementById('devID').value = id;
+    document.getElementById('devName').value = name;
+    document.getElementById('adminTitle').innerText = "✏️ 編輯現有設備";
+    document.getElementById('addBtn').innerText = "儲存修改";
+    }
+    
     function closeQR() { document.getElementById('qrOverlay').classList.add('hidden'); }
 
     // 使用者功能
@@ -271,6 +292,7 @@ async function saveDevice() {
 </script>
 </body>
 </html>
+
 
 
 
