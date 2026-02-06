@@ -192,7 +192,7 @@
             const rows = data.slice(1).filter(r => r[0]); 
             body.innerHTML = rows.map(r => `
                 <tr>
-                    <td><strong>${r[1]}</strong><br><small>ID: ${r[0]}</small></td>
+                    <td><strong>${r[1]}</strong><br><strong>ID: ${r[0]}</strong></td>
                     <td>
                         <button class="btn-qr" onclick="makeQR('${r[0]}', '${r[1]}')">QR code</button>
                         <button class="btn-edit" onclick="fillForm('${r[0]}', '${r[1]}')">修改名稱</button>
@@ -335,6 +335,7 @@
 </script>
 </body>
 </html>
+
 
 
 
