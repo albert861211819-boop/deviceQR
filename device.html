@@ -17,8 +17,19 @@
         input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; }
-        .btn-qr { background: var(--primary); color: white; padding: 8px 12px; font-size: 14px; }
-        .btn-edit { background: #ffc107; color: #212529; padding: 8px 12px; font-size: 14px; }
+        .btn-qr, .btn-edit {
+            min-width: 60px;    /* 設定最小寬度為 60px */
+            height: 36px;       /* 固定高度 */
+            padding: 0 10px;    /* 移除上下內距，靠高度控制 */
+            font-size: 14px;
+            margin: 2px;        /* 讓兩個按鈕之間有點間距 */
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            }
+        .btn-qr { background: var(--primary); color: white; }
+        .btn-edit { background: #ffc107; color: #212529; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
@@ -335,6 +346,7 @@
 </script>
 </body>
 </html>
+
 
 
 
