@@ -41,11 +41,11 @@
         }
         .qr-modal { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 85%; }
 
-        /* 紀錄樣式 */
+        /* 紀錄樣式 */ 
         .log-item { background: #f8f9fa; border-left: 5px solid var(--primary); padding: 12px; margin-bottom: 10px; border-radius: 4px; }
         .log-header { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; justify-content: space-between; }
         .log-time { font-size: 12px; color: #666; }
-    </style>
+    </style> 
 </head>
 <body>
 
@@ -85,7 +85,7 @@
         </div>
 
         <div class="card">
-            <input type="text" id="testModel" placeholder="機種型號(無產品請填月初檢查)">
+            <input type="text" id="testModel" placeholder="機種型號(無產品請填每月檢查)">
             <input type="text" id="testerName" placeholder="使用者姓名">
             <label style="font-size:12px;">開始時間</label><input type="datetime-local" id="startTime"><br>
             <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
@@ -93,13 +93,51 @@
         <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
         <div id="checkItems">
             <style>
-                .check-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-                .check-label { flex: 2; font-size: 14px; color: #333; line-height: 1.3; }
-                .check-options { flex: 1; display: flex; justify-content: flex-end; gap: 10px; white-space: nowrap; /* 禁止換行 */ }
-                .check-options label { display: flex; align-items: center; font-size: 14px; cursor: pointer; white-space: nowrap; }
+                .check-row { 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: space-between; 
+                    padding: 12px 0; 
+                    border-bottom: 1px solid #eee; 
+                }
+            
+            /* 左側文字：允許折行以騰出空間給右側 */
+                .check-label { 
+                    flex: 1; 
+                    font-size: 14px; 
+                    color: #333; 
+                    padding-right: 8px;
+                    line-height: 1.4;
+                }
+                
+                /* 右側選項：強制水平排列 */
+                .check-options { 
+                    display: flex; 
+                    flex-direction: row; /* 強制橫向 */
+                    gap: 12px; 
+                    align-items: center;
+                }
+                
+                /* 選項標籤：讓圓圈與文字垂直居中且不換行 */
+                .check-options label {
+                    display: inline-flex; /* 關鍵：讓內容在內部水平排列 */
+                    align-items: center;
+                    font-size: 14px;
+                    cursor: pointer;
+                    white-space: nowrap; /* 關鍵：禁止「正常」兩字跑到圓圈下方 */
+                }
+                
+                /* 調整圓圈間距 */
+                .check-options input[type="radio"] {
+                    margin: 0 4px 0 0; /* 只留右邊間距給文字 */
+                    width: 18px;
+                    height: 18px;
+                    cursor: pointer;
+                    flex-shrink: 0; /* 防止圓圈被擠壓變形 */
+                }
             </style>
 
-            <div class="check-row">
+            <!-- <div class="check-row"> 
     <div class="check-label">1. 電源是否正常？(Input V ± 10%)</div>
     <div class="check-options">
         <label><input type="radio" name="q1" value="正常" checked> 正常</label>
@@ -144,9 +182,9 @@
     <div class="check-options">
         <label><input type="radio" name="q6" value="正常" checked> 正常</label>
         <label><input type="radio" name="q6" value="異常"> 異常</label>
-    </div>
+    </div> -->
 </div>
-        </div>
+        </div> 
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
 
@@ -403,6 +441,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
