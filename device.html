@@ -93,97 +93,35 @@
         <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
         <div id="checkItems">
             <style>
-                .check-row { 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: space-between; 
-                    padding: 12px 0; 
-                    border-bottom: 1px solid #eee; 
-                }
-            
-            /* 左側文字：允許折行以騰出空間給右側 */
-                .check-label { 
-                    flex: 1; 
-                    font-size: 14px; 
-                    color: #333; 
-                    padding-right: 8px;
-                    line-height: 1.4;
-                }
-                
-                /* 右側選項：強制水平排列 */
-                .check-options { 
-                    display: flex; 
-                    flex-direction: row; /* 強制橫向 */
-                    gap: 12px; 
+               /* 確保右側選項容器是橫向排列 */
+                .check-options {
+                    display: flex !important;
+                    flex-direction: row !important; /* 強制橫向 */
+                    gap: 15px; /* 選項之間的間距 */
                     align-items: center;
+                    justify-content: flex-end;
                 }
                 
-                /* 選項標籤：讓圓圈與文字垂直居中且不換行 */
+                /* 關鍵：讓 label 內部的圓圈和文字水平併排 */
                 .check-options label {
-                    display: inline-flex; /* 關鍵：讓內容在內部水平排列 */
-                    align-items: center;
-                    font-size: 14px;
+                    display: inline-flex !important; /* 核心：強制內容併排 */
+                    flex-direction: row !important;
+                    align-items: center !important;
+                    white-space: nowrap !important; /* 絕對禁止文字換行 */
                     cursor: pointer;
-                    white-space: nowrap; /* 關鍵：禁止「正常」兩字跑到圓圈下方 */
+                    margin: 0 !important; /* 移除可能的預設間距 */
+                    padding: 0 !important;
                 }
                 
-                /* 調整圓圈間距 */
+                /* 圓圈與文字的間距 */
                 .check-options input[type="radio"] {
-                    margin: 0 4px 0 0; /* 只留右邊間距給文字 */
                     width: 18px;
                     height: 18px;
-                    cursor: pointer;
-                    flex-shrink: 0; /* 防止圓圈被擠壓變形 */
+                    margin: 0 5px 0 0 !important; /* 圓圈右側留 5px 給文字 */
+                    flex-shrink: 0; /* 防止圓圈被擠壓 */
                 }
             </style>
-
-            <!-- <div class="check-row"> 
-    <div class="check-label">1. 電源是否正常？(Input V ± 10%)</div>
-    <div class="check-options">
-        <label><input type="radio" name="q1" value="正常" checked> 正常</label>
-        <label><input type="radio" name="q1" value="異常"> 異常</label>
-    </div>
-</div>
-
-<div class="check-row">
-    <div class="check-label">2. 水槽及水位器，水位是否正常？</div>
-    <div class="check-options">
-        <label><input type="radio" name="q2" value="正常" checked> 正常</label>
-        <label><input type="radio" name="q2" value="異常"> 異常</label>
-    </div>
-</div>
-
-<div class="check-row">
-    <div class="check-label">3. 感濕棉布是否潔淨，吸水性是否良好？</div>
-    <div class="check-options">
-        <label><input type="radio" name="q3" value="正常" checked> 正常</label>
-        <label><input type="radio" name="q3" value="異常"> 異常</label>
-    </div>
-</div>
-
-<div class="check-row">
-    <div class="check-label">4. 溼度保護器是否設定於 130℃~150℃ 間？</div>
-    <div class="check-options">
-        <label><input type="radio" name="q4" value="正常" checked> 正常</label>
-        <label><input type="radio" name="q4" value="異常"> 異常</label>
-    </div>
-</div>
-
-<div class="check-row">
-    <div class="check-label">5. 蒸餾水是否足夠？</div>
-    <div class="check-options">
-        <label><input type="radio" name="q5" value="正常" checked> 正常</label>
-        <label><input type="radio" name="q5" value="異常"> 異常</label>
-    </div>
-</div>
-
-<div class="check-row">
-    <div class="check-label">6. 環境溫溼度是否合乎規定？</div>
-    <div class="check-options">
-        <label><input type="radio" name="q6" value="正常" checked> 正常</label>
-        <label><input type="radio" name="q6" value="異常"> 異常</label>
-    </div> -->
-</div>
+            </div>
         </div> 
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
@@ -332,8 +270,8 @@ function fillForm(id, name, category) {
                 <div class="check-row">
                     <div class="check-label">${text}</div>
                     <div class="check-options">
-                        <label><input type="radio" name="q${i}" value="正常" checked> 正常</label>
-                        <label><input type="radio" name="q${i}" value="異常"> 異常</label>
+                        <label><input type="radio" name="q${i}" value="正常" checked> <span>正常</span></label>
+                        <label><input type="radio" name="q${i}" value="異常"> <span>異常</span></label>
                     </div>
                 </div>
             `).join('');
@@ -441,6 +379,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
