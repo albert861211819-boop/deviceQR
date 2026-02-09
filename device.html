@@ -34,6 +34,40 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
 
+        .check-row {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .check-label {
+            flex: 1;
+            font-size: 14px;
+            color: #333;
+            padding-right: 10px;
+        }
+        .check-options {
+            display: flex !important;
+            gap: 15px;
+            flex-shrink: 0; /* 防止右側選項被壓縮 */
+        }
+        .check-options label {
+            display: inline-flex !important;
+            align-items: center !important;
+            white-space: nowrap !important;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .check-options input[type="radio"] {
+            width: 18px !important;
+            height: 18px !important;
+            margin: 0 4px 0 0 !important;
+            cursor: pointer;
+            /* 移除可能干擾橫排的屬性 */
+            display: inline-block !important;
+        }
+
         /* QR Code 彈窗 */
         #qrOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -90,52 +124,10 @@
             <label style="font-size:12px;">開始時間</label><input type="datetime-local" id="startTime"><br>
             <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
-        <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
-        <div id="checkItems">
-            <style>
-              /* 強制選項容器橫向排列 */
-                .check-options {
-                    display: flex !important;
-                    flex-direction: row !important;
-                    justify-content: flex-end;
-                    gap: 15px;
-                    flex: 1; /* 讓出空間給題目 */
-                }
-                
-                /* 讓 label 變成一個緊湊的橫向容器 */
-                .check-options label {
-                    display: inline-flex !important;
-                    align-items: center !important;
-                    white-space: nowrap !important;
-                    cursor: pointer;
-                }
-                
-                /* 核心修正：防止勾選框佔用一整行 */
-                .check-options input[type="radio"] {
-                    display: inline !important;    /* 解除 block 狀態 */
-                    width: 18px !important;       /* 強制固定寬度，不要 100% */
-                    height: 18px !important;
-                    margin: 0 4px 0 0 !important; /* 只有右邊留間距 */
-                    padding: 0 !important;
-                    appearance: auto !important;   /* 回復原生外觀，避免被自訂樣式撐大 */
-                    -webkit-appearance: radio !important;
-                }
-                
-                /* 確保文字不會換行 */
-                .check-options span {
-                    display: inline-block !important;
-                    vertical-align: middle;
-                }
-                input[type="radio"] {
-                all: unset; /* 清除所有預設樣式 */
-                -webkit-appearance: radio; /* 重新呼叫瀏覽器的收音機按鈕外觀 */
-                width: 18px;
-                height: 18px;
-                margin-right: 5px;
-                }
-            </style>
-            </div>
-        </div> 
+                <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
+               <div id="checkItems">
+                </div>
+            </div> 
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
 
@@ -392,6 +384,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
