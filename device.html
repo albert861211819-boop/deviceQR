@@ -126,6 +126,13 @@
                     display: inline-block !important;
                     vertical-align: middle;
                 }
+                input[type="radio"] {
+                all: unset; /* 清除所有預設樣式 */
+                -webkit-appearance: radio; /* 重新呼叫瀏覽器的收音機按鈕外觀 */
+                width: 18px;
+                height: 18px;
+                margin-right: 5px;
+                }
             </style>
             </div>
         </div> 
@@ -385,6 +392,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
