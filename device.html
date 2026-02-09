@@ -93,32 +93,38 @@
         <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
         <div id="checkItems">
             <style>
-               /* 確保右側選項容器是橫向排列 */
+              /* 強制選項容器橫向排列 */
                 .check-options {
                     display: flex !important;
-                    flex-direction: row !important; /* 強制橫向 */
-                    gap: 15px; /* 選項之間的間距 */
-                    align-items: center;
-                    justify-content: flex-end;
-                }
-                
-                /* 關鍵：讓 label 內部的圓圈和文字水平併排 */
-                .check-options label {
-                    display: inline-flex !important; /* 核心：強制內容併排 */
                     flex-direction: row !important;
-                    align-items: center !important;
-                    white-space: nowrap !important; /* 絕對禁止文字換行 */
-                    cursor: pointer;
-                    margin: 0 !important; /* 移除可能的預設間距 */
-                    padding: 0 !important;
+                    justify-content: flex-end;
+                    gap: 15px;
+                    flex: 1; /* 讓出空間給題目 */
                 }
                 
-                /* 圓圈與文字的間距 */
+                /* 讓 label 變成一個緊湊的橫向容器 */
+                .check-options label {
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    white-space: nowrap !important;
+                    cursor: pointer;
+                }
+                
+                /* 核心修正：防止勾選框佔用一整行 */
                 .check-options input[type="radio"] {
-                    width: 18px;
-                    height: 18px;
-                    margin: 0 5px 0 0 !important; /* 圓圈右側留 5px 給文字 */
-                    flex-shrink: 0; /* 防止圓圈被擠壓 */
+                    display: inline !important;    /* 解除 block 狀態 */
+                    width: 18px !important;       /* 強制固定寬度，不要 100% */
+                    height: 18px !important;
+                    margin: 0 4px 0 0 !important; /* 只有右邊留間距 */
+                    padding: 0 !important;
+                    appearance: auto !important;   /* 回復原生外觀，避免被自訂樣式撐大 */
+                    -webkit-appearance: radio !important;
+                }
+                
+                /* 確保文字不會換行 */
+                .check-options span {
+                    display: inline-block !important;
+                    vertical-align: middle;
                 }
             </style>
             </div>
@@ -379,6 +385,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
