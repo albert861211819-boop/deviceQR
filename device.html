@@ -55,7 +55,7 @@
         <input type="text" id="devName" placeholder="輸入設備名稱">
         <input type="text" id="devID" placeholder="輸入編號 (ID)">
         <select id="devCategory" style="width:100%; padding:12px; margin-bottom:15px; border-radius:6px;">
-            <option value="Normal chamber">Convection chamber</option>
+            <option value="Normal chamber">Normal chamber</option>
             <option value="Convection chamber">Convection chamber</option>
             <option value="振動機">振動機</option>
             <option value="衝擊機">衝擊機</option>
@@ -221,32 +221,38 @@
 }
 
     async function refreshAdminList() {
-        try {
-            const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
-            const data = await res.json();
-            const body = document.getElementById('adminListBody');
-            
-            // 跳過標題列並過濾空資料
-            const rows = data.slice(1).filter(r => r[0]); 
-            body.innerHTML = rows.map(r => `
-                <tr>
-                    <td><strong>${r[1]}</strong><br><small>ID: ${r[0]}</small></td>
-                    <td>
-                        <button class="btn-qr" onclick="makeQR('${r[0]}', '${r[1]}')">QR code</button>
-                        <button class="btn-edit" onclick="fillForm('${r[0]}', '${r[1]}')">修改</button>
-                    </td>
-                </tr>
-            `).join('');
-        } catch (e) { console.error("抓取清單失敗"); }
-    }
-    
-    function fillForm(id, name) {
-        document.getElementById('devID').value = id;
-        document.getElementById('devName').value = name;
-        document.getElementById('adminTitle').innerText = "✏️ 編輯設備";
-        document.getElementById('addBtn').innerText = "儲存修改";
-        document.getElementById('cancelBtn').classList.remove('hidden');
-    }
+    try {
+        const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
+        const data = await res.json();
+        const body = document.getElementById('adminListBody');
+        
+        // 跳過標題列並過濾空資料
+        const rows = data.slice(1).filter(r => r[0]); 
+        body.innerHTML = rows.map(r => `
+            <tr>
+                <td>
+                    <strong>${r[1]}</strong><br>
+                    <small>ID: ${r[0]}</small><br>
+                    <span style="font-size:11px; background:#e9ecef; padding:2px 5px; border-radius:4px;">${r[2] || '未設定'}</span>
+                </td>
+                <td>
+                    <button class="btn-qr" onclick="makeQR('${r[0]}', '${r[1]}')">QR code</button>
+                    <button class="btn-edit" onclick="fillForm('${r[0]}', '${r[1]}', '${r[2]}')">修改</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) { console.error("抓取失敗"); }
+}
+
+// 點擊修改時，也要把類別帶入下拉選單
+function fillForm(id, name, category) {
+    document.getElementById('devID').value = id;
+    document.getElementById('devName').value = name;
+    document.getElementById('devCategory').value = category || "Normal chamber";
+    document.getElementById('adminTitle').innerText = "✏️ 編輯設備";
+    document.getElementById('addBtn').innerText = "儲存修改";
+    document.getElementById('cancelBtn').classList.remove('hidden');
+}
 
     function resetForm() {
         document.getElementById('devID').value = '';
@@ -385,6 +391,7 @@
 </script>
 </body>
 </html>
+
 
 
 
