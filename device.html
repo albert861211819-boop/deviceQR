@@ -54,6 +54,12 @@
         <h3 id="adminTitle" style="color:var(--admin); margin-top:0;">🔧 設備管理清單</h3>
         <input type="text" id="devName" placeholder="輸入設備名稱">
         <input type="text" id="devID" placeholder="輸入編號 (ID)">
+        <select id="devCategory" style="width:100%; padding:12px; margin-bottom:15px; border-radius:6px;">
+            <option value="Normal chamber">Convection chamber</option>
+            <option value="Convection chamber">Convection chamber</option>
+            <option value="振動機">振動機</option>
+            <option value="衝擊機">衝擊機</option>
+        </select>
         <button id="addBtn" class="btn-submit" onclick="saveDevice()">新增設備</button>
         <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消</button>
         
@@ -171,27 +177,48 @@
     };
 
     // --- 管理員函數 ---
+    const CHECK_CONFIG = {
+    "Normal chamber": [
+        "1. 電源是否正常？(Input V ± 10%)",
+        "2. 水槽及水位器，水位是否正常？",
+        "3. 感濕棉布是否潔淨，吸水性是否良好？",
+        "4. 溼度保護器是否設定於 130℃~150℃ 間？",
+        "5. 蒸餾水是否足夠？",
+        "6. 環境溫溼度是否合乎規定？"
+    ],
+    "Convection chamber": [
+        "1. 電源是否正常？(230VAC±10%)",
+        "2. 環境溫度是否合乎規定？"
+    ],
+    "振動機": [
+        "1. 確認空壓機油量是否足夠？",
+        "2. Shaker冷卻風扇是否正常運作？",
+        "3. 確認空壓系統運作正常？",
+        "4. Shaker氣囊充氣是否足夠？",
+        "5. 溫機10分鐘？"
+    ],
+    "衝擊機": [
+        "1. 確認氣壓瓶內壓力量是否足夠？",
+        "2. 檢查氣壓式彈簧氣墊是否異常？",
+        "3. 確認機台是否水平？",
+        "4. 確認電源開關、近接開關、E.M.G.按鈕是否異常？",
+        "5. 不相關物品不要放置於輔助平台上，以免影響測試。"
+    ]
+};
     async function saveDevice() {
-        const name = document.getElementById('devName').value.trim();
-        const id = document.getElementById('devID').value.trim();
-        if(!name || !id) return alert("請填寫完整");
+    const id = document.getElementById('devID').value.trim();
+    const name = document.getElementById('devName').value.trim();
+    const category = document.getElementById('devCategory').value; // 取得選單值
+    
+    if(!id || !name) return alert("請填寫編號與名稱");
 
-        const btn = document.getElementById('addBtn');
-        btn.innerText = "同步中...";
-        btn.disabled = true;
-
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST", mode: "no-cors",
-                body: JSON.stringify({ action: "saveDevice", id: id, name: name })
-            });
-            alert("雲端清單更新成功！");
-            location.reload();
-        } catch (e) {
-            alert("同步失敗");
-            btn.disabled = false;
-        }
-    }
+    await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST", mode: "no-cors",
+        body: JSON.stringify({ action: "saveDevice", id: id, name: name, category: category })
+    });
+    alert("設備已更新類別並同步！");
+    location.reload();
+}
 
     async function refreshAdminList() {
         try {
@@ -212,7 +239,7 @@
             `).join('');
         } catch (e) { console.error("抓取清單失敗"); }
     }
-
+    
     function fillForm(id, name) {
         document.getElementById('devID').value = id;
         document.getElementById('devName').value = name;
@@ -243,19 +270,31 @@
 
     // --- 使用者函數 ---
     async function showTestPage(id) {
-        document.getElementById('testView').classList.remove('hidden');
-        document.getElementById('displayDevID').innerText = "編號：" + id;
-
-        try {
-            // 抓取名稱
-            const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
-            const list = await res.json();
-            const dev = list.slice(1).find(r => r[0].toString() === id.toString());
-            document.getElementById('displayDevName').innerText = dev ? dev[1] : "新設備 (ID: "+id+")";
-        } catch (e) { document.getElementById('displayDevName').innerText = "網路連線異常"; }
-
-        fetchCloudLogs(id);
-    }
+    document.getElementById('testView').classList.remove('hidden');
+    try {
+        const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
+        const list = await res.json();
+        const dev = list.slice(1).find(r => r[0].toString() === id.toString());
+        
+        if (dev) {
+            const category = dev[2] || "Normal chamber"; // 預設類別
+            window.currentCategory = category; // 全域儲存以便後續存檔
+            document.getElementById('displayDevName').innerText = dev[1];
+            
+            // 生成點檢表
+            const items = CHECK_CONFIG[category] || [];
+            document.getElementById('checkItems').innerHTML = items.map((text, i) => `
+                <div class="check-row">
+                    <div class="check-label">${text}</div>
+                    <div class="check-options">
+                        <label><input type="radio" name="q${i}" value="正常" checked> 正常</label>
+                        <label><input type="radio" name="q${i}" value="異常"> 異常</label>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (e) { console.error(e); }
+}
 
     async function fetchCloudLogs(id) {
     try {
@@ -304,25 +343,25 @@
 }
 
     async function saveToLog() {
-    const rawId = document.getElementById('displayDevID').innerText;
-    const rawName = document.getElementById('displayDevName').innerText;
-    const getVal = (name) => document.querySelector(`input[name="${name}"]:checked`).value;
+    const getVal = (i) => {
+        const el = document.querySelector(`input[name="q${i}"]:checked`);
+        return el ? el.value : "N/A";
+    };
+    
+    const itemCount = CHECK_CONFIG[window.currentCategory].length;
+    let checksArr = [];
+    for(let i=0; i<itemCount; i++) { checksArr.push(getVal(i)); }
 
     const log = {
-        action: "saveLog", // 確保 GAS 知道這是存紀錄
-        id: rawId.replace("編號：", "").trim(),
-        name: rawName.replace("📍 目前設備：", "").trim(),
-        model: document.getElementById('testModel').value.trim(),
-        user: document.getElementById('testerName').value.trim(),
+        action: "saveLog",
+        category: window.currentCategory, // 告訴 GAS 要存到哪個分頁
+        id: document.getElementById('displayDevID').innerText.replace("編號：",""),
+        name: document.getElementById('displayDevName').innerText,
+        model: document.getElementById('testModel').value,
+        user: document.getElementById('testerName').value,
         start: document.getElementById('startTime').value,
         end: document.getElementById('endTime').value,
-        // 分開抓取每一個值
-        q1: getVal('q1'),
-        q2: getVal('q2'),
-        q3: getVal('q3'),
-        q4: getVal('q4'),
-        q5: getVal('q5'),
-        q6: getVal('q6')
+        checks: checksArr.join(", ")
     };
 
     if(!log.model || !log.user || !log.start || !log.end) return alert("請完整填寫紀錄");
@@ -335,7 +374,7 @@
             method: "POST", mode: "no-cors",
             body: JSON.stringify(log)
         });
-        alert("✅ 點檢紀錄已成功分開存入雲端！");
+        alert("✅ 點檢紀錄已成功存入雲端！");
         location.reload();
     } catch (e) {
         alert("送出失敗，請檢查網路。");
@@ -346,6 +385,7 @@
 </script>
 </body>
 </html>
+
 
 
 
