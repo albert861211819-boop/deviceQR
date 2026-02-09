@@ -277,6 +277,7 @@ function fillForm(id, name, category) {
     // --- 使用者函數 ---
     async function showTestPage(id) {
     document.getElementById('testView').classList.remove('hidden');
+    document.getElementById('displayDevID').innerText = "編號：" + id;
     try {
         const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
         const list = await res.json();
@@ -349,41 +350,49 @@ function fillForm(id, name, category) {
 }
 
     async function saveToLog() {
-    const getVal = (i) => {
-        const el = document.querySelector(`input[name="q${i}"]:checked`);
-        return el ? el.value : "N/A";
-    };
-    
-    const itemCount = CHECK_CONFIG[window.currentCategory].length;
-    let checksArr = [];
-    for(let i=0; i<itemCount; i++) { checksArr.push(getVal(i)); }
+    // 修正抓取 ID 的邏輯：從顯示文字中提取純 ID
+    const rawIdText = document.getElementById('displayDevID').innerText;
+    const cleanId = rawIdText.replace("編號：", "").trim();
+    const cleanName = document.getElementById('displayDevName').innerText;
 
-    const log = {
+    // 抓取所有點檢項目的值並存入陣列
+    const items = CHECK_CONFIG[window.currentCategory] || [];
+    let checksArray = [];
+    for (let i = 0; i < items.length; i++) {
+        const radio = document.querySelector(`input[name="q${i}"]:checked`);
+        checksArray.push(radio ? radio.value : "N/A");
+    }
+
+    const logData = {
         action: "saveLog",
-        category: window.currentCategory, // 告訴 GAS 要存到哪個分頁
-        id: document.getElementById('displayDevID').innerText.replace("編號：",""),
-        name: document.getElementById('displayDevName').innerText,
-        model: document.getElementById('testModel').value,
-        user: document.getElementById('testerName').value,
+        category: window.currentCategory,
+        id: cleanId,        // 確保這裡有值
+        name: cleanName,
+        model: document.getElementById('testModel').value.trim(),
+        user: document.getElementById('testerName').value.trim(),
         start: document.getElementById('startTime').value,
         end: document.getElementById('endTime').value,
-        checks: checksArr.join(", ")
+        checks: checksArray // 傳送陣列 [正常, 正常, 異常...]
     };
 
-    if(!log.model || !log.user || !log.start || !log.end) return alert("請完整填寫紀錄");
+    if (!logData.model || !logData.user || !logData.start || !logData.end) {
+        return alert("請填寫完整資訊");
+    }
 
     const btn = document.getElementById('submitBtn');
-    btn.innerText = "同步紀錄中..."; btn.disabled = true;
+    btn.innerText = "傳送中...";
+    btn.disabled = true;
 
     try {
         await fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST", mode: "no-cors",
-            body: JSON.stringify(log)
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify(logData)
         });
-        alert("✅ 點檢紀錄已成功存入雲端！");
+        alert("✅ 點檢紀錄已成功分欄存入雲端！");
         location.reload();
     } catch (e) {
-        alert("送出失敗，請檢查網路。");
+        alert("傳送失敗");
         btn.disabled = false;
         btn.innerText = "確認送出紀錄";
     }
@@ -391,6 +400,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
