@@ -89,10 +89,10 @@
         <input type="text" id="devName" placeholder="輸入設備名稱">
         <input type="text" id="devID" placeholder="輸入編號 (ID)">
         <select id="devCategory" style="width:100%; padding:12px; margin-bottom:15px; border-radius:6px;">
-            <option value="Normal chamber">Normal chamber</option>
+            <option value="Normal chamber">General chamber</option>
             <option value="Convection chamber">Convection chamber</option>
-            <option value="振動機">振動機</option>
-            <option value="衝擊機">衝擊機</option>
+            <option value="振動機">Vibration tester</option>
+            <option value="衝擊機">Shock tester</option>
         </select>
         <button id="addBtn" class="btn-submit" onclick="saveDevice()">新增設備</button>
         <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消</button>
@@ -159,7 +159,7 @@
 
     // --- 管理員函數 ---
     const CHECK_CONFIG = {
-    "Normal chamber": [
+    "General chamber": [
         "1. 電源是否正常？(Input V ± 10%)",
         "2. 水槽及水位器，水位是否正常？",
         "3. 感濕棉布是否潔淨，吸水性是否良好？",
@@ -171,14 +171,14 @@
         "1. 電源是否正常？(230VAC±10%)",
         "2. 環境溫度是否合乎規定？"
     ],
-    "振動機": [
+    "Vibration tester": [
         "1. 確認空壓機油量是否足夠？",
         "2. Shaker冷卻風扇是否正常運作？",
         "3. 確認空壓系統運作正常？",
         "4. Shaker氣囊充氣是否足夠？",
         "5. 溫機10分鐘？"
     ],
-    "衝擊機": [
+    "Shock tester": [
         "1. 確認氣壓瓶內壓力量是否足夠？",
         "2. 檢查氣壓式彈簧氣墊是否異常？",
         "3. 確認機台是否水平？",
@@ -384,6 +384,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
