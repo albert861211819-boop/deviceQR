@@ -280,6 +280,7 @@ function fillForm(id, name, category) {
                     </div>
                 </div>
             `).join('');
+            fetchCloudLogs(id, category);
         }
     } catch (e) { console.error(e); }
 }
@@ -299,19 +300,24 @@ function fillForm(id, name, category) {
         }
 
         // 定義一個內部函數來處理時間格式化
-        const formatDateTime = (dateStr) => {
-            if (!dateStr) return "";
-            const d = new Date(dateStr);
-            // 檢查是否為有效日期
-            if (isNaN(d.getTime())) return dateStr; 
+        async function fetchCloudLogs(id, category) {
+    const content = document.getElementById('logContent');
+    try {
+        // 增加 category 參數，讓 GAS 知道要去哪個分頁找
+        const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
+        const data = await res.json();
+        
+        // 過濾該設備 ID 的紀錄
+        const rows = data.slice(1).filter(r => r[0].toString() === id.toString()).reverse();
+        
+        if(rows.length === 0) {
+            content.innerHTML = "<p style='text-align:center; color:#999;'>尚無紀錄</p>";
+            return;
+        }
 
-            const Y = d.getFullYear();
-            const M = String(d.getMonth() + 1).padStart(2, '0');
-            const D = String(d.getDate()).padStart(2, '0');
-            const hh = String(d.getHours()).padStart(2, '0'); // 24小時制
-            const mm = String(d.getMinutes()).padStart(2, '0');
-            
-            return `${Y}-${M}-${D} ${hh}:${mm}`;
+        const formatDateTime = (dateStr) => {
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? dateStr : `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
         };
 
         content.innerHTML = rows.map(r => `
@@ -320,13 +326,12 @@ function fillForm(id, name, category) {
                     <span>機種: ${r[2]}</span>
                     <span>使用者: ${r[3]}</span>
                 </div>
-                <div class="log-time">
-                    時段: ${formatDateTime(r[4])} ～ ${formatDateTime(r[5])}
-                </div>
+                <div class="log-time">時段: ${formatDateTime(r[4])} ～ ${formatDateTime(r[5])}</div>
+                <div style="font-size:11px; color:var(--primary); margin-top:5px;">結果: ${r[6]}</div>
             </div>
         `).join('');
     } catch (e) {
-        console.error("抓取紀錄失敗", e);
+        content.innerHTML = "<p style='text-align:center; color:red;'>紀錄載入失敗</p>";
     }
 }
 
@@ -384,6 +389,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
