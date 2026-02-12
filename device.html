@@ -285,22 +285,7 @@ function fillForm(id, name, category) {
     } catch (e) { console.error(e); }
 }
 
-    async function fetchCloudLogs(id) {
-    try {
-        const res = await fetch(GOOGLE_SCRIPT_URL);
-        const data = await res.json();
-        
-        // 跳過標題列並篩選 ID
-        const rows = data.slice(1).filter(r => r[0].toString() === id.toString()).reverse();
-        const content = document.getElementById('logContent');
-        
-        if(rows.length === 0) {
-            content.innerHTML = "<p style='text-align:center; color:#999;'>尚無紀錄</p>";
-            return;
-        }
-
-        // 定義一個內部函數來處理時間格式化
-        async function fetchCloudLogs(id, category) {
+    async function fetchCloudLogs(id, category) {
     const content = document.getElementById('logContent');
     try {
         // 增加 category 參數，讓 GAS 知道要去哪個分頁找
@@ -389,6 +374,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
