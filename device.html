@@ -14,7 +14,8 @@
         
         /* 管理員樣式 */
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
-        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; display: block; }
+        input[type="datetime-local"] {font-family: inherit; min-height: 45px; /* 增加高度，方便手機點選 */}
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; }
         .btn-qr, .btn-edit {
@@ -117,12 +118,12 @@
             <h2 id="displayDevName" style="margin:0;">載入中...</h2>
             <small id="displayDevID" style="color:#666;"></small>
         </div>
-
+        
         <div class="card">
             <input type="text" id="testModel" placeholder="機種型號(無產品請填每月檢查)">
             <input type="text" id="testerName" placeholder="使用者姓名">
-            <label style="font-size:10px;">開始時間</label><input type="datetime-local" id="startTime"><br>
-            <label style="font-size:10px;">結束時間</label><input type="datetime-local" id="endTime">
+            <label style="font-size:12px;">開始時間</label><input type="datetime-local" id="startTime"><br>
+            <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
                 <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
                <div id="checkItems">
@@ -374,6 +375,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
