@@ -15,7 +15,18 @@
         /* 管理員樣式 */
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
         input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; display: block; }
-        input[type="datetime-local"] {font-family: inherit; min-height: 45px; /* 增加高度，方便手機點選 */}
+        input[type="datetime-local"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important; /* 強制讓 padding 不外推 */
+                display: block !important;
+                padding: 10px;
+                height: 45px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 16px;
+                -webkit-appearance: none; /* 移除某些手機瀏覽器的預設陰影 */
+            }
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; }
         .btn-qr, .btn-edit {
@@ -375,6 +386,7 @@ function fillForm(id, name, category) {
 </script>
 </body>
 </html>
+
 
 
 
