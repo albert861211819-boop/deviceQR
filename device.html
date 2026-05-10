@@ -105,6 +105,7 @@
             <option value="Convection chamber">Convection chamber</option>
             <option value="Vibration tester">Vibration tester</option>
             <option value="Shock tester">Shock tester</option>
+            <option value="Drop tester">Drop tester</option>
         </select>
         <button id="addBtn" class="btn-submit" onclick="saveDevice()">新增設備</button>
         <button id="cancelBtn" class="hidden" style="background:#666; color:white; width:100%; margin-top:5px;" onclick="resetForm()">取消</button>
@@ -114,6 +115,18 @@
             <tbody id="adminListBody"></tbody>
         </table>
     </div>
+    
+    <div id="checkItems"></div>
+
+    <div id="dropInputs" class="hidden" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+    <h4 style="margin-bottom: 10px; color: #admin;">Drop Tester</h4>
+    <input type="number" id="dropL" placeholder="Length (mm)">
+    <input type="number" id="dropW" placeholder="Width (mm)">
+    <input type="number" id="dropH" placeholder="Height (mm)">
+    <input type="number" id="dropWeight" placeholder="Weight (kg)">
+    <input type="number" id="dropHeight" placeholder="Drop height (mm)">
+        </div>
+    
 
     <div id="qrOverlay" class="hidden" onclick="closeQR()">
         <div class="qr-modal" onclick="event.stopPropagation()">
@@ -300,7 +313,7 @@ function fillForm(id, name, category) {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     
     const currentTime = `${year}-${month}-${day}T${hours}:${minutes}`;
-    const myPhoneID = getPhoneID();   
+       
     
     // 自動填入開始時間與結束時間（預設相同，使用者可再微調）
     document.getElementById('startTime').value = currentTime;
@@ -316,6 +329,15 @@ function fillForm(id, name, category) {
             const category = dev[2] || "Normal chamber";
             window.currentCategory = category;
             document.getElementById('displayDevName').innerText = dev[1];
+
+            if (category === "Drop tester") {
+                // 顯示落摔專用輸入，隱藏一般勾選
+                document.getElementById('dropInputs').classList.remove('hidden');
+                document.getElementById('checkItems').classList.add('hidden');
+            } else {
+                // 顯示一般勾選，隱藏落摔專用
+                document.getElementById('dropInputs').classList.add('hidden');
+                document.getElementById('checkItems').classList.remove('hidden');
             
             const items = CHECK_CONFIG[category] || [];
             document.getElementById('checkItems').innerHTML = items.map((text, i) => `
@@ -331,6 +353,7 @@ function fillForm(id, name, category) {
             // 抓取該類別紀錄
             const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
             const logs = await resLogs.json();
+            const myPhoneID = getPhoneID();    
             
             // 【核心修正】現在手機 ID 在第 7 欄 (索引 6)
             const unfinished = logs.slice(1).reverse().find(r => 
@@ -414,9 +437,22 @@ function fillForm(id, name, category) {
     // 取得當前類別的所有點檢標題與結果
    const items = CHECK_CONFIG[category] || [];
     let checksArray = [];
-    for (let i = 0; i < items.length; i++) {
-        const radio = document.querySelector(`input[name="q${i}"]:checked`);
-        checksArray.push(radio ? radio.value : "未填");
+    if (category === "Drop tester") {
+        // 抓取 5 個數字輸入框的值
+        checksArray = [
+            document.getElementById('dropL').value || "0",
+            document.getElementById('dropW').value || "0",
+            document.getElementById('dropH').value || "0",
+            document.getElementById('dropWeight').value || "0",
+            document.getElementById('dropHeight').value || "0"
+        ];
+    } else {
+        // 抓取 Radio 勾選值
+        const items = CHECK_CONFIG[category] || [];
+        for (let i = 0; i < items.length; i++) {
+            const radio = document.querySelector(`input[name="q${i}"]:checked`);
+            checksArray.push(radio ? radio.value : "N/A");
+        }
     }
    
 
