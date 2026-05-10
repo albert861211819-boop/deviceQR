@@ -290,9 +290,11 @@ async function showTestPage(id) {
             if (category === "Drop tester") {
                 document.getElementById('dropInputs').classList.remove('hidden');
                 document.getElementById('checkItems').classList.add('hidden');
+                document.getElementById('endTimeWrapper').classList.add('hidden'); // 隱藏結束時間
             } else {
                 document.getElementById('dropInputs').classList.add('hidden');
                 document.getElementById('checkItems').classList.remove('hidden');
+                document.getElementById('endTimeWrapper').classList.remove('hidden'); // 顯示結束時間
                 const items = CHECK_CONFIG[category] || [];
                 document.getElementById('checkItems').innerHTML = items.map((text, i) => `
                     <div class="check-row">
