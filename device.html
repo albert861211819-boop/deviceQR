@@ -396,17 +396,16 @@ function fillForm(id, name, category) {
     // 修正抓取 ID 的邏輯：從顯示文字中提取純 ID
     const cleanId = document.getElementById('displayDevID').innerText.replace("編號：", "").trim();
     const cleanName = document.getElementById('displayDevName').innerText;
-    
+    const category = window.currentCategory; // 這裡要確保抓到正確的類別名稱
+        
     // 取得當前類別的所有點檢標題與結果
-    const items = CHECK_CONFIG[window.currentCategory] || [];
+   const items = CHECK_CONFIG[category] || [];
     let checksArray = [];
-    let headersArray = []; // 新增：用來傳送標題名稱給 GAS
-
     for (let i = 0; i < items.length; i++) {
-        headersArray.push(items[i]); // 存入具體名稱，例如 "1.電源..."
         const radio = document.querySelector(`input[name="q${i}"]:checked`);
-        checksArray.push(radio ? radio.value : "N/A");
+        checksArray.push(radio ? radio.value : "未填");
     }
+   
 
     const logData = {
         action: "saveLog",
