@@ -339,8 +339,9 @@
             name: document.getElementById('displayDevName').innerText,
             model: document.getElementById('testModel').value,
             user: document.getElementById('testerName').value,
-            start: document.getElementById('startTime').value,
-            end: document.getElementById('endTime').value,
+            // --- 關鍵修正：將 T 換成空格，變成純字串送出 ---
+            start: document.getElementById('startTime').value.replace("T", " "),
+            end: document.getElementById('endTime').value.replace("T", " "),
             checks: checksArray
         };
 
