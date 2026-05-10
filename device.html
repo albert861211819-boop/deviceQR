@@ -254,7 +254,23 @@ function fillForm(id, name, category) {
         document.getElementById('addBtn').innerText = "同步至雲端";
         document.getElementById('cancelBtn').classList.add('hidden');
     }
+    
+    // 1. 取得或生成這支手機的專屬 ID
+    function getPhoneID() {
+    let phoneID = localStorage.getItem('my_device_id');
+    if (!phoneID) {
+        phoneID = 'P-' + Math.floor(Math.random() * 1000000);
+        localStorage.setItem('my_device_id', phoneID);
+        }
+    return phoneID;
+    }
 
+    // 2. 格式化時間工具
+    function getNowStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    
     // --- QR Code 彈窗 ---
     function makeQR(id, name) {
         document.getElementById('qrcode').innerHTML = "";
@@ -308,6 +324,27 @@ function fillForm(id, name, category) {
                     </div>
                 </div>
             `).join('');
+            
+            const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
+            const logs = await resLogs.json();
+            
+            // 尋找條件：ID相同 + 結束時間為空 + 手機ID(索引10)相同
+            const unfinished = logs.slice(1).reverse().find(r => 
+                r[0].toString() === id.toString() && 
+                (!r[5] || r[5] === "") && 
+                r[10] === myPhoneID
+            );
+
+            if (unfinished) {
+                alert("偵測到您上次的點檢尚未結束，已為您帶入資料。");
+                document.getElementById('testModel').value = unfinished[2];
+                document.getElementById('testerName').value = unfinished[3];
+                // 帶入上次開始時間
+                const startDate = new Date(unfinished[4]);
+                document.getElementById('startTime').value = isNaN(startDate.getTime()) ? unfinished[4] : formatForInput(startDate);
+                // 自動填入本次掃碼時間為結束時間
+                document.getElementById('endTime').value = currentTime;
+            }
             
             // 載入紀錄
             fetchCloudLogs(id, category); 
@@ -368,18 +405,18 @@ function fillForm(id, name, category) {
 
     const logData = {
         action: "saveLog",
+        phoneId: getPhoneID(), // 傳送手機識別碼
         category: window.currentCategory,
-        id: cleanId,
-        name: cleanName,
+        id: document.getElementById('displayDevID').innerText.replace("編號：", ""),
+        name: document.getElementById('displayDevName').innerText,
         model: document.getElementById('testModel').value.trim(),
         user: document.getElementById('testerName').value.trim(),
         start: document.getElementById('startTime').value,
         end: document.getElementById('endTime').value,
-        headers: headersArray, // 傳送標題清單
-        checks: checksArray    // 傳送勾選值
+        checks: [] // ... (原本獲取 radio 值的邏輯) ...
     };
 
-    if (!logData.model || !logData.user || !logData.start || !logData.end) {
+    if (!logData.model || !logData.user || !logData.start) {
         return alert("請填寫完整資訊");
     }
 
