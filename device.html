@@ -275,6 +275,7 @@ async function showTestPage(id) {
     document.getElementById('testView').classList.remove('hidden');
     document.getElementById('displayDevID').innerText = "編號：" + id;
     document.getElementById('startTime').value = getNowStr();
+    document.getElementById('endTime').value = getNowStr();
 
     try {
         const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
