@@ -24,7 +24,34 @@
         display: block;
         }
         label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
-        input[type="datetime-local"] { height: 20px; margin-right: 10px;}
+        
+        /* 讓時間輸入框不要佔滿整行，且與標題並排 */
+        .time-field {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        background: #fdfdfd;
+        padding: 5px 10px;
+        border-radius: 6px;
+        border: 1px solid #f0f0f0;
+        }
+        .time-field label {
+        margin-bottom: 0; /* 移除原本的下方外距 */
+        flex-shrink: 0;
+        margin-right: 10px;
+        font-weight: bold;
+        color: #555;
+        }
+        .time-field input[type="datetime-local"] {
+        width: auto !important; /* 寬度由內容決定 */
+        flex-grow: 1;
+        margin-bottom: 0; /* 移除下外距 */
+        padding: 5px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+        height: 35px; /* 稍微縮小高度 */
+        }
         
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; }
