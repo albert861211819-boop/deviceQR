@@ -283,6 +283,8 @@ function fillForm(id, name, category) {
 
     function closeQR() { document.getElementById('qrOverlay').classList.add('hidden'); }
 
+
+    
     // --- 使用者函數 ---
    async function showTestPage(id) {
     document.getElementById('testView').classList.remove('hidden');
@@ -298,6 +300,7 @@ function fillForm(id, name, category) {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     
     const currentTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    const myPhoneID = getPhoneID();   
     
     // 自動填入開始時間與結束時間（預設相同，使用者可再微調）
     document.getElementById('startTime').value = currentTime;
@@ -325,26 +328,28 @@ function fillForm(id, name, category) {
                 </div>
             `).join('');
             
+            // 抓取該類別紀錄
             const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
             const logs = await resLogs.json();
             
-            // 尋找條件：ID相同 + 結束時間為空 + 手機ID(索引10)相同
+            // 【核心修正】現在手機 ID 在第 7 欄 (索引 6)
             const unfinished = logs.slice(1).reverse().find(r => 
                 r[0].toString() === id.toString() && 
                 (!r[5] || r[5] === "") && 
-                r[10] === myPhoneID
+                r[6] === myPhoneID // 這裡改為索引 6
             );
 
             if (unfinished) {
-                alert("偵測到您上次的點檢尚未結束，已為您帶入資料。");
+                alert("偵測到您上次的點檢尚未結束，已自動為您帶入資料。");
                 document.getElementById('testModel').value = unfinished[2];
                 document.getElementById('testerName').value = unfinished[3];
-                // 帶入上次開始時間
+                
                 const startDate = new Date(unfinished[4]);
                 document.getElementById('startTime').value = isNaN(startDate.getTime()) ? unfinished[4] : formatForInput(startDate);
-                // 自動填入本次掃碼時間為結束時間
-                document.getElementById('endTime').value = currentTime;
-            }
+                
+                // 填入當下時間作為結束時間
+                document.getElementById('endTime').value = getNowStr();
+                }
             
             // 載入紀錄
             fetchCloudLogs(id, category); 
