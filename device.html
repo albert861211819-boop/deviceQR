@@ -268,20 +268,36 @@ function fillForm(id, name, category) {
     function closeQR() { document.getElementById('qrOverlay').classList.add('hidden'); }
 
     // --- 使用者函數 ---
-    async function showTestPage(id) {
+   async function showTestPage(id) {
     document.getElementById('testView').classList.remove('hidden');
     document.getElementById('displayDevID').innerText = "編號：" + id;
+
+    // --- 新增：自動填入當前時間 ---
+    const now = new Date();
+    // 格式化為 YYYY-MM-DDTHH:mm (例如 2024-05-24T14:30)
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    const currentTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    
+    // 自動填入開始時間與結束時間（預設相同，使用者可再微調）
+    document.getElementById('startTime').value = currentTime;
+    document.getElementById('endTime').value = currentTime;
+    // ----------------------------
+
     try {
         const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
         const list = await res.json();
         const dev = list.slice(1).find(r => r[0].toString() === id.toString());
         
         if (dev) {
-            const category = dev[2] || "Normal chamber"; // 預設類別
-            window.currentCategory = category; // 全域儲存以便後續存檔
+            const category = dev[2] || "Normal chamber";
+            window.currentCategory = category;
             document.getElementById('displayDevName').innerText = dev[1];
             
-            // 生成點檢表
             const items = CHECK_CONFIG[category] || [];
             document.getElementById('checkItems').innerHTML = items.map((text, i) => `
                 <div class="check-row">
@@ -292,7 +308,9 @@ function fillForm(id, name, category) {
                     </div>
                 </div>
             `).join('');
-            fetchCloudLogs(id, category);
+            
+            // 載入紀錄
+            fetchCloudLogs(id, category); 
         }
     } catch (e) { console.error(e); }
 }
