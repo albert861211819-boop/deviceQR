@@ -164,19 +164,24 @@
     const ADMIN_PASSWORD = "admin";
 
     window.onload = async function() {
-        const params = new URLSearchParams(window.location.search);
-        const isAdmin = params.get('mode') === ADMIN_PASSWORD;
-        const id = params.get('id');
+    const params = new URLSearchParams(window.location.search);
+    const isAdmin = params.get('mode') === ADMIN_PASSWORD;
+    const id = params.get('id');
 
-        if (isAdmin) {
-            document.getElementById('adminPanel').classList.remove('hidden');
-            refreshAdminList();
-        }
-        
-        if (id) {
-            showTestPage(id);
-        }
-    };
+    // 分開嘗試執行，避免一方失敗導致另一方也不顯示
+    if (isAdmin) {
+        document.getElementById('adminPanel').classList.remove('hidden');
+        try {
+            await refreshAdminList();
+        } catch(e) { console.error("管理清單載入失敗", e); }
+    }
+    
+    if (id) {
+        try {
+            await showTestPage(id);
+        } catch(e) { console.error("測試頁面載入失敗", e); }
+    }
+};
 
     // --- 管理員函數 ---
     const CHECK_CONFIG = {
@@ -275,6 +280,17 @@ function fillForm(id, name, category) {
     }
 
     // 2. 格式化時間工具
+    // 新增這個 missing 的函數
+    function formatForInput(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
     function getNowStr() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
