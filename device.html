@@ -144,7 +144,7 @@
         </div>
 
         <div class="log-list">
-            <h3>📊 近期紀錄</h3>
+            <h3>📊 本月紀錄</h3>
             <div id="logContent"><p style="text-align:center; color:#999;">正在連線雲端資料庫...</p></div>
         </div>
     </div>
@@ -360,15 +360,23 @@ function fillForm(id, name, category) {
     async function fetchCloudLogs(id, category) {
     const content = document.getElementById('logContent');
     try {
-        // 增加 category 參數，讓 GAS 知道要去哪個分頁找
         const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
         const data = await res.json();
         
-        // 過濾該設備 ID 的紀錄
-        const rows = data.slice(1).filter(r => r[0].toString() === id.toString()).reverse();
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-11
+
+        // 過濾條件：1.設備 ID 相符 2.紀錄日期為當月
+        const rows = data.slice(1).filter(r => {
+            const logDate = new Date(r[4]); // 假設開始時間在第 5 欄 (索引 4)
+            return r[0].toString() === id.toString() && 
+                   logDate.getFullYear() === currentYear && 
+                   logDate.getMonth() === currentMonth;
+        }).reverse(); // 最新的排在前面
         
         if(rows.length === 0) {
-            content.innerHTML = "<p style='text-align:center; color:#999;'>尚無紀錄</p>";
+            content.innerHTML = `<p style='text-align:center; color:#999;'>本月(${currentMonth + 1}月) 尚無紀錄</p>`;
             return;
         }
 
@@ -377,6 +385,9 @@ function fillForm(id, name, category) {
             return isNaN(d.getTime()) ? dateStr : `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
         };
 
+        // 更新標題顯示為「本月紀錄」
+        //content.previousElementSibling.innerText = `📊 ${currentMonth + 1}月點檢紀錄 (共 ${rows.length} 筆)`;
+
         content.innerHTML = rows.map(r => `
             <div class="log-item">
                 <div class="log-header">
@@ -384,7 +395,9 @@ function fillForm(id, name, category) {
                     <span>使用者: ${r[3]}</span>
                 </div>
                 <div class="log-time">時段: ${formatDateTime(r[4])} ～ ${formatDateTime(r[5])}</div>
-                <div style="font-size:11px; color:var(--primary); margin-top:5px;">結果: ${r[6]}</div>
+                <div style="font-size:11px; color:var(--primary); margin-top:5px;">
+                    Phone ID: ${r[6]}
+                </div>
             </div>
         `).join('');
     } catch (e) {
