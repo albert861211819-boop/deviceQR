@@ -177,10 +177,15 @@
     };
 
     function getNowStr() {
-    const d = new Date();
-    const pad = (n) => n.toString().padStart(2, '0');
-    // 格式為 YYYY-MM-DDTHH:mm (24小時制)
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const now = new Date();
+    // 透過本地時間直接獲取數值，避開 ISOString 的時區轉換問題
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0'); // 這裡會抓到手機本地 24 小時制
+    const min = String(now.getMinutes()).padStart(2, '0');
+    
+    return `${y}-${m}-${d}T${h}:${min}`;
     }
 
     function getPhoneID() {
