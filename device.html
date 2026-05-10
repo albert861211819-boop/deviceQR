@@ -166,49 +166,14 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbf4xh7ylwM52Evsv06gFIRe8oToHi_zyuYpXkMlgTlme6YSxOKBn7HkwQBwCALP0/exec";
-    const ADMIN_PASSWORD = "admin";
-
-    window.onload = async function() {
-        const params = new URLSearchParams(window.location.search);
-        const isAdmin = params.get('mode') === ADMIN_PASSWORD;
-        const id = params.get('id');
-
-        if (isAdmin) {
-            document.getElementById('adminPanel').classList.remove('hidden');
-            refreshAdminList();
-        }
-        if (id) {
-            showTestPage(id);
-        }
-    };
-
-    function getNowStr() {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    }
-
-    function getPhoneID() {
-        let phoneID = localStorage.getItem('my_device_id');
-        if (!phoneID) {
-            phoneID = 'P-' + Math.floor(Math.random() * 1000000);
-            localStorage.setItem('my_device_id', phoneID);
-        }
-        return phoneID;
-    }
-
-    const CHECK_CONFIG = {
-        "General chamber": ["1. 電源是否正常？", "2. 水槽水位是否正常？", "3. 感濕棉布是否潔淨？", "4. 溼度保護器設定？", "5. 蒸餾水是否足夠？", "6. 環境溫溼度是否合規？"],
-        "Convection chamber": ["1. 電源是否正常？", "2. 環境溫度是否合規？"],
-        "Vibration tester": ["1. 空壓機油量？", "2. 冷卻風扇運作？", "3. 空壓系統正常？", "4. 氣囊充氣足夠？", "5. 溫機10分鐘？"],
-        "Shock tester": ["1. 氣壓瓶壓力？", "2. 氣墊是否異常？", "3. 機台是否水平？", "4. 安全開關異常？", "5. 平台清理？"]
-    };
-
+    // --- 修改後的 showTestPage 函數 ---
     async function showTestPage(id) {
         document.getElementById('testView').classList.remove('hidden');
         document.getElementById('displayDevID').innerText = "編號：" + id;
+        
+        // 1. 初始化時間欄位
         document.getElementById('startTime').value = getNowStr();
-        document.getElementById('endTime').value = getNowStr();
+        document.getElementById('endTime').value = ""; // 預設不填入結束時間
 
         try {
             const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
@@ -220,16 +185,17 @@
                 window.currentCategory = category;
                 document.getElementById('displayDevName').innerText = dev[1];
 
-                // --- 類別判斷邏輯 ---
+                // 2. 判斷是否為 Drop Tester
                 if (category === "Drop tester") {
                     document.getElementById('dropInputs').classList.remove('hidden');
                     document.getElementById('checkItems').classList.add('hidden');
-                    document.getElementById('endTimeWrapper').classList.add('hidden'); // 隱藏結束時間
+                    document.getElementById('endTimeWrapper').classList.add('hidden');
                 } else {
                     document.getElementById('dropInputs').classList.add('hidden');
                     document.getElementById('checkItems').classList.remove('hidden');
-                    document.getElementById('endTimeWrapper').classList.remove('hidden'); // 顯示結束時間
+                    document.getElementById('endTimeWrapper').classList.remove('hidden');
                     
+                    // 渲染點檢項目
                     const items = CHECK_CONFIG[category] || [];
                     document.getElementById('normalChecks').innerHTML = items.map((text, i) => `
                         <div class="check-row">
@@ -239,33 +205,60 @@
                                 <label><input type="radio" name="q${i}" value="異常"> 異常</label>
                             </div>
                         </div>`).join('');
+
+                    // 3. 【核心邏輯】檢查是否有未完成紀錄 (Phone ID 比對)
+                    const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
+                    const logs = await resLogs.json();
+                    const myPhoneID = getPhoneID();
+                    
+                    // 尋找：設備ID符合、結束時間(索引5)為空、手機ID(索引6)符合的最新一筆
+                    const unfinished = logs.slice(1).reverse().find(r => 
+                        r[0].toString() === id.toString() && 
+                        (!r[5] || r[5] === "") && 
+                        r[6] === myPhoneID
+                    );
+
+                    if (unfinished) {
+                        alert("偵測到您有一筆進行中的點檢，請填寫結束時間以完成紀錄。");
+                        document.getElementById('testModel').value = unfinished[2];
+                        document.getElementById('testerName').value = unfinished[3];
+                        
+                        // 帶入之前的開始時間，並將結束時間設為當下
+                        const startDate = new Date(unfinished[4]);
+                        document.getElementById('startTime').value = isNaN(startDate.getTime()) ? unfinished[4] : formatForInput(startDate);
+                        document.getElementById('endTime').value = getNowStr();
+                        document.getElementById('endTime').style.border = "2px solid #dc3545"; // 紅框提醒
+                    }
                 }
                 fetchCloudLogs(id, category); 
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("載入失敗", e); }
     }
 
+    // 格式化輔助函數
+    function formatForInput(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    // --- 修改後的 saveToLog 函數 (加入提示檢查) ---
     async function saveToLog() {
         const cleanId = document.getElementById('displayDevID').innerText.replace("編號：", "").trim();
         const category = window.currentCategory;
-        let checksArray = [];
+        const endTimeValue = document.getElementById('endTime').value;
 
-        if (category === "Drop tester") {
-            checksArray = [
-                document.getElementById('dropL').value || "0",
-                document.getElementById('dropW').value || "0",
-                document.getElementById('dropH').value || "0",
-                document.getElementById('dropWeight').value || "0",
-                document.getElementById('dropHeight').value || "0"
-            ];
-        } else {
-            const itemsCount = (CHECK_CONFIG[category] || []).length;
-            for (let i = 0; i < itemsCount; i++) {
-                const radio = document.querySelector(`input[name="q${i}"]:checked`);
-                checksArray.push(radio ? radio.value : "N/A");
-            }
+        // 非 Drop tester 且 結束時間未填寫時的提醒
+        if (category !== "Drop tester" && !endTimeValue) {
+            const confirmStartOnly = confirm("您尚未填寫結束時間，系統將僅紀錄點檢開始。下次掃描時需再補填。是否送出？");
+            if (!confirmStartOnly) return;
         }
 
+        // ... (其餘 logData 封裝邏輯保持不變)
         const logData = {
             action: "saveLog",
             phoneId: getPhoneID(),
@@ -275,11 +268,11 @@
             model: document.getElementById('testModel').value.trim(),
             user: document.getElementById('testerName').value.trim(),
             start: document.getElementById('startTime').value,
-            end: category === "Drop tester" ? "" : document.getElementById('endTime').value, 
-            checks: checksArray
+            end: endTimeValue, 
+            checks: checksArray // 根據類別抓取後的陣列
         };
 
-        if (!logData.model || !logData.user || !logData.start) return alert("請填寫完整資訊");
+        if (!logData.model || !logData.user || !logData.start) return alert("請填寫機種與使用者姓名");
 
         const btn = document.getElementById('submitBtn');
         btn.innerText = "傳送中...";
@@ -287,84 +280,12 @@
 
         try {
             await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(logData) });
-            alert("✅ 紀錄已送出！");
+            alert("✅ 紀錄更新成功！");
             location.reload();
         } catch (e) {
             alert("傳送失敗");
             btn.disabled = false;
-            btn.innerText = "確認送出紀錄";
         }
-    }
-
-    // (其餘管理員函數如 refreshAdminList, saveDevice, makeQR 等保持不變...)
-    async function refreshAdminList() {
-        try {
-            const res = await fetch(GOOGLE_SCRIPT_URL + "?type=list");
-            const data = await res.json();
-            const body = document.getElementById('adminListBody');
-            const rows = data.slice(1).filter(r => r[0]); 
-            body.innerHTML = rows.map(r => `
-                <tr>
-                    <td><strong>${r[1]}</strong><br><small>ID: ${r[0]}</small><br><span style="font-size:11px; background:#eee; padding:2px 5px; border-radius:4px;">${r[2] || '未設定'}</span></td>
-                    <td><button class="btn-qr" onclick="makeQR('${r[0]}', '${r[1]}')">QR</button><button class="btn-edit" onclick="fillForm('${r[0]}', '${r[1]}', '${r[2]}')">改</button></td>
-                </tr>`).join('');
-        } catch (e) { console.error("抓取失敗"); }
-    }
-
-    async function saveDevice() {
-        const id = document.getElementById('devID').value.trim();
-        const name = document.getElementById('devName').value.trim();
-        const category = document.getElementById('devCategory').value;
-        if(!id || !name) return alert("請填寫編號與名稱");
-        await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "saveDevice", id: id, name: name, category: category })});
-        alert("設備已更新！");
-        location.reload();
-    }
-
-    function fillForm(id, name, category) {
-        document.getElementById('devID').value = id;
-        document.getElementById('devName').value = name;
-        document.getElementById('devCategory').value = category || "General chamber";
-        document.getElementById('adminTitle').innerText = "✏️ 編輯設備";
-        document.getElementById('addBtn').innerText = "儲存修改";
-        document.getElementById('cancelBtn').classList.remove('hidden');
-    }
-
-    function resetForm() {
-        document.getElementById('devID').value = '';
-        document.getElementById('devName').value = '';
-        document.getElementById('adminTitle').innerText = "🔧 設備管理清單";
-        document.getElementById('addBtn').innerText = "新增設備";
-        document.getElementById('cancelBtn').classList.add('hidden');
-    }
-
-    function makeQR(id, name) {
-        document.getElementById('qrcode').innerHTML = "";
-        const url = window.location.origin + window.location.pathname + "?id=" + encodeURIComponent(id);
-        new QRCode(document.getElementById('qrcode'), { text: url, width: 200, height: 200 });
-        document.getElementById('qrName').innerText = name;
-        document.getElementById('qrID').innerText = "ID: " + id;
-        document.getElementById('qrOverlay').classList.remove('hidden');
-    }
-
-    function closeQR() { document.getElementById('qrOverlay').classList.add('hidden'); }
-
-    async function fetchCloudLogs(id, category) {
-        const content = document.getElementById('logContent');
-        try {
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
-            const data = await res.json();
-            const now = new Date();
-            const rows = data.slice(1).filter(r => {
-                const logDate = new Date(r[4]);
-                return r[0].toString() === id.toString() && logDate.getFullYear() === now.getFullYear() && logDate.getMonth() === now.getMonth();
-            }).reverse();
-            content.innerHTML = rows.length === 0 ? "<p style='text-align:center; color:#999;'>本月尚無紀錄</p>" : rows.map(r => `
-                <div class="log-item">
-                    <div class="log-header"><span>機種: ${r[2]}</span><span>${r[3]}</span></div>
-                    <div class="log-time">時間: ${r[4].replace('T',' ')}</div>
-                </div>`).join('');
-        } catch (e) { content.innerHTML = "紀錄載入失敗"; }
     }
 </script>
 </body>
