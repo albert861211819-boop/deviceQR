@@ -200,7 +200,7 @@
         const data = await res.json();
         document.getElementById('adminListBody').innerHTML = data.slice(1).map(r => `
             <tr>
-                <td>${r[1]}<br><small>id= ${r[0]}</small></td>
+                <td>${r[1]}<br><small>ID=${r[0]}</small></td>
                 <td><button class="btn-qr" onclick="makeQR('${r[0]}','${r[1]}')">QR</button></td>
             </tr>`).join('');
     }
