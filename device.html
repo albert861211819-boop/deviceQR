@@ -270,18 +270,15 @@
     try {
         const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(cat)}`);
         const data = await res.json();
-        
-        // 取得本月第一天
         const now = new Date();
         
-        // 篩選：ID符合、且為本月的紀錄
         const rows = data.slice(1).filter(r => {
-            if (!r[4]) return false; // 無開始時間則跳過
+            if (!r[4]) return false;
             const logDate = new Date(r[4]);
             return r[0].toString() === id.toString() && 
                    logDate.getFullYear() === now.getFullYear() && 
                    logDate.getMonth() === now.getMonth();
-        }).reverse(); // 最新紀錄排在上面
+        }).reverse();
 
         if (rows.length === 0) {
             content.innerHTML = "<p style='text-align:center; color:#999;'>本月尚無紀錄</p>";
@@ -289,17 +286,22 @@
         }
 
         content.innerHTML = rows.map(r => {
-            // 格式化顯示時間 (將 T 替換為空白)
-            const startTime = r[4] ? r[4].replace('T', ' ') : '---';
-            const endTime = r[5] ? r[5].replace('T', ' ') : '<span style="color:red;">進行中</span>';
+            // 強制格式化為 YYYY-MM-DD HH:mm (共 16 個字元)
+            const formatTime = (str) => {
+                if (!str) return null;
+                return str.replace('T', ' ').slice(0, 16);
+            };
+
+            const startTime = formatTime(r[4]) || '---';
+            const endTime = formatTime(r[5]) || '<span style="color:#dc3545; font-weight:bold;">進行中...</span>';
             
             return `
                 <div class="log-item">
                     <div class="log-header">
                         <span>機種: ${r[2]}</span>
-                        <span>${r[3]}</span>
+                        <span style="color:#666;">${r[3]}</span>
                     </div>
-                    <div class="log-body">
+                    <div class="log-body" style="margin-top:5px;">
                         <div class="log-time-row"><span class="time-tag">始:</span> ${startTime}</div>
                         <div class="log-time-row"><span class="time-tag">終:</span> ${endTime}</div>
                     </div>
@@ -307,7 +309,6 @@
         }).join('');
     } catch (e) {
         content.innerHTML = "<p style='text-align:center; color:red;'>紀錄載入失敗</p>";
-        console.error(e);
     }
 }
 
