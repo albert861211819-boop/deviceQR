@@ -116,7 +116,7 @@
         </table>
     </div>
     
-
+    <div id="checkItems"></div>
     <div id="dropInputs" class="hidden" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
     <h4 style="margin-bottom: 10px; color: #admin;">Drop Tester</h4>
     <input type="number" id="dropL" placeholder="Length (mm)">
@@ -149,7 +149,15 @@
             <label style="font-size:12px;">結束時間</label><input type="datetime-local" id="endTime">
             <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
                 <h4 style="margin-bottom: 10px; color: #333;">📋 設備點檢項目</h4>
-               <div id="checkItems">
+               <div id="checkItems"></div>
+                <div id="dropInputs" class="hidden" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                <h4 style="margin-bottom: 10px; color: #admin;">Drop Tester</h4>
+                <input type="number" id="dropL" placeholder="Length (mm)">
+                <input type="number" id="dropW" placeholder="Width (mm)">
+                <input type="number" id="dropH" placeholder="Height (mm)">
+                <input type="number" id="dropWeight" placeholder="Weight (kg)">
+                <input type="number" id="dropHeight" placeholder="Drop height (mm)">
+                    </div>
                 </div>
             </div> 
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
