@@ -80,6 +80,42 @@
         margin: 0 4px 0 0 !important; 
         flex-shrink: 0;
         }
+
+        /* 摺疊面板樣式 */
+.collapsible {
+    background-color: #eee;
+    color: #444;
+    cursor: pointer;
+    padding: 12px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+.active, .collapsible:hover { background-color: #ddd; }
+.collapsible:after { content: '\002B'; font-weight: bold; float: right; }
+.active:after { content: "\2212"; }
+.content {
+    padding: 0 15px;
+    display: none;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 0 0 6px 6px;
+}
+.g-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 15px 0;
+}
+.g-input-grid input { margin-bottom: 5px !important; }
         
         #qrOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .qr-modal { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 85%; }
@@ -144,7 +180,23 @@
                 <input type="number" id="dropH" placeholder="Height (mm)">
                 <input type="number" id="dropWeight" placeholder="Weight (kg)">
                 <input type="number" id="dropHeight" placeholder="Drop height (mm)">
-            </div>
+
+            <button type="button" class="collapsible" onclick="toggleCollapsible(this)">加速規數值錄入 (g)</button>
+            <div class="content">
+            <div class="g-input-grid">
+            <input type="number" id="g_corner" placeholder="Corner">
+            <input type="number" id="g_short_e" placeholder="Short edge">
+            <input type="number" id="g_mid_e" placeholder="Mid edge">
+            <input type="number" id="g_long_e" placeholder="Long edge">
+            <input type="number" id="g_small_f" placeholder="Small face">
+            <input type="number" id="g_opp_small_f" placeholder="Oppsite small f.">
+            <input type="number" id="g_mid_f" placeholder="Mid face">
+            <input type="number" id="g_opp_mid_f" placeholder="Oppsite mid f.">
+            <input type="number" id="g_large_f" placeholder="Large face">
+            <input type="number" id="g_opp_large_s" placeholder="Oppsite large s.">      
+        </div>
+    </div>             
+</div>
             
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
@@ -176,6 +228,12 @@
         if (id) showTestPage(id);
     };
 
+    function toggleCollapsible(btn) {
+    btn.classList.toggle("active");
+    var content = btn.nextElementSibling;
+    content.style.display = (content.style.display === "block") ? "none" : "block";
+    }
+    
     function getNowStr() {
     const now = new Date();
     // 透過本地時間直接獲取數值，避開 ISOString 的時區轉換問題
@@ -326,7 +384,7 @@
         const category = window.currentCategory;
         let checksArray = [];
         if (category === "Drop tester") {
-            checksArray = [document.getElementById('dropL').value, document.getElementById('dropW').value, document.getElementById('dropH').value, document.getElementById('dropWeight').value, document.getElementById('dropHeight').value];
+            checksArray = [document.getElementById('dropL').value, document.getElementById('dropW').value, document.getElementById('dropH').value, document.getElementById('dropWeight').value, document.getElementById('dropHeight').value,document.getElementById('g_corner').value,document.getElementById('g_short_e').value,document.getElementById('g_mid_e').value,document.getElementById('g_long_e').value,document.getElementById('g_small_f').value,document.getElementById('g_opp_small_f').value,document.getElementById('g_mid_f').value, document.getElementById('g_opp_mid_f').value,document.getElementById('g_large_f').value,document.getElementById('g_opp_large_s').value];
         } else {
             document.querySelectorAll('#normalChecks input:checked').forEach(i => checksArray.push(i.value));
         }
