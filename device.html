@@ -336,33 +336,36 @@
         const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(cat)}`);
         const data = await res.json();
         
-        // 取得本月第一天，僅用於過濾月份
         const now = new Date();
         const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-        // 篩選本月且符合 ID 的紀錄
         const rows = data.slice(1).filter(r => {
             if (!r[4]) return false;
-            // 檢查字串開頭是否為本月 (如 2023-10)
             return r[0].toString() === id.toString() && r[4].toString().startsWith(currentMonthStr);
         }).reverse();
 
         if (rows.length === 0) {
-            content.innerHTML = "<p style='text-align:center; color:#999;'>本月尚無紀錄</p>";
+            content.innerHTML = "<p style='text-align:center; color:#999; font-size:14px;'>本月尚無紀錄</p>";
             return;
         }
 
         content.innerHTML = rows.map(r => {
-            // 直接處理 Excel 讀取到的字串 (例如 "2023-10-27T14:30:00.000Z" 或 "2023-10-27 14:30")
             const rawFormat = (val) => {
                 if (!val) return null;
-                // 將 T 換成空格，並只保留前 16 位 (YYYY-MM-DD HH:mm)
                 return val.toString().replace('T', ' ').substring(0, 16);
             };
 
             const startTime = rawFormat(r[4]) || '---';
             const endTime = rawFormat(r[5]) || '<span style="color:#dc3545; font-weight:bold;">進行中</span>';
             
+            // --- 關鍵修正：判斷是否為 Drop tester ---
+            const isDropTester = (cat === "Drop tester");
+            const endTimeHTML = isDropTester ? '' : `
+                <div class="log-time-row">
+                    <span class="time-tag">終:</span>
+                    <span class="time-val">${endTime}</span>
+                </div>`;
+
             return `
                 <div class="log-item">
                     <div class="log-header">
@@ -370,8 +373,11 @@
                         <span style="font-weight:normal; color:#666;">使用者: ${r[3]}</span>
                     </div>
                     <div class="log-body">
-                        <div class="log-time-row"><span class="time-tag">始:</span><span class="time-val">${startTime}</span></div>
-                        <div class="log-time-row"><span class="time-tag">終:</span><span class="time-val">${endTime}</span></div>
+                        <div class="log-time-row">
+                            <span class="time-tag">始:</span>
+                            <span class="time-val">${startTime}</span>
+                        </div>
+                        ${endTimeHTML} 
                     </div>
                 </div>`;
         }).join('');
