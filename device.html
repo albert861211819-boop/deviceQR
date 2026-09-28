@@ -26,7 +26,6 @@
         }
         label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
         
-        /* 時間輸入框樣式 */
         input[type="datetime-local"] {
             width: 100% !important; 
             max-width: 220px !important;    
@@ -84,7 +83,6 @@
             flex-shrink: 0;
         }
 
-        /* 摺疊面板樣式 */
         .collapsible {
             background-color: #eee;
             color: #444;
@@ -130,7 +128,6 @@
         .log-time-row { font-size: 13px; color: #666; margin-top: 3px; display: flex; gap: 6px; }
         .time-tag { font-weight: bold; }
 
-        /* 相機掃描視窗專用樣式 */
         .scanner-container { width: 300px; background: white; padding: 15px; border-radius: 12px; text-align: center; }
         #reader { width: 100%; }
     </style> 
@@ -246,7 +243,7 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcHjQWcfU401VUA9G9FT-hbIoY30LMFb2qQGvxOxk_JLAvI-PD9BdvsC0V3fk8kd0/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwMMiVfTN5wy4PLpjZS9N-QHx9idgFK9UZeo_wROUxYt0Rt36cmOweClWedTdr7jyg/exec";
     const ADMIN_PASSWORD = "admin";
     const CHECK_CONFIG = {
         "General chamber": ["電源是否正常？(Input V ± 10%)", "水槽及水位器，水位是否正常？", "感濕棉布是否潔淨，吸水性是否良好？", "溼度保護器是否設定於 130℃~150℃ 間？", "蒸餾水是否足夠？", "環境溫溼度是否合乎規定？"],
@@ -267,7 +264,6 @@
         if (id) showTestPage(id);
     };
 
-    /* 觸發確認按鈕事件 */
     function submitIDesign() {
         const val = document.getElementById('idesignNo').value;
         if (!val) {
@@ -277,59 +273,53 @@
         fetchIDesignData(val);
     }
 
-   /* 處理 IDesign API 抓取邏輯 (瀏覽器開啟 VPN + Allow CORS 擴充套件) */
     async function fetchIDesignData(requestID) {
-    if (!requestID) return;
-    
-    // 直接存取研華內網 API 網址
-    const targetUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
-    
-    try {
-        const res = await fetch(targetUrl);
+        if (!requestID) return;
         
-        if (!res.ok) {
-            throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
-        }
+        const targetUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
         
-        const data = await res.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-            const firstItem = data[0];
+        try {
+            const res = await fetch(targetUrl);
             
-            // 1. 自動填入機種型號 (ProductName)
-            if (firstItem.ProductName) {
-                document.getElementById('testModel').value = firstItem.ProductName;
+            if (!res.ok) {
+                throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
             }
             
-            // 2. 自動填入使用者姓名 (Engineer @ 前方的字串)
-            if (firstItem.Engineer) {
-                const engineerName = firstItem.Engineer.split('@')[0];
-                document.getElementById('testerName').value = engineerName;
-            }
-            
-            // 3. 提取所有相異的 WorkItem 自動產生選單選項
-            const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
-            const selectElem = document.getElementById('workItemSelect');
-            selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
-            
-            workItems.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item;
-                opt.textContent = item;
-                selectElem.appendChild(opt);
-            });
-            if (workItems.length > 0) selectElem.selectedIndex = 1;
+            const data = await res.json();
 
-        } else {
-            alert("未找到對應的 IDesign 資料");
+            if (Array.isArray(data) && data.length > 0) {
+                const firstItem = data[0];
+                
+                if (firstItem.ProductName) {
+                    document.getElementById('testModel').value = firstItem.ProductName;
+                }
+                
+                if (firstItem.Engineer) {
+                    const engineerName = firstItem.Engineer.split('@')[0];
+                    document.getElementById('testerName').value = engineerName;
+                }
+                
+                const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
+                const selectElem = document.getElementById('workItemSelect');
+                selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
+                
+                workItems.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    selectElem.appendChild(opt);
+                });
+                if (workItems.length > 0) selectElem.selectedIndex = 1;
+
+            } else {
+                alert("未找到對應的 IDesign 資料");
+            }
+        } catch (e) {
+            console.error("Fetch IDesign API Error:", e);
+            alert("讀取 IDesign API 失敗！\n請確認已開啟 Allow CORS 擴充套件與 VPN。");
         }
-    } catch (e) {
-        console.error("Fetch IDesign API Error:", e);
-        alert("讀取 IDesign API 失敗！\n請確認已開啟 Allow CORS 擴充套件與 VPN。");
     }
-}
 
-    /* 相機 QR 掃描器控制 */
     function startScanner() {
         document.getElementById('scannerOverlay').classList.remove('hidden');
         if (!html5QrCode) {
@@ -343,7 +333,7 @@
                 stopScanner();
                 fetchIDesignData(decodedText);
             },
-            (errorMessage) => { /* 掃描過程中忽略持續發生的失敗 */ }
+            (errorMessage) => { }
         ).catch(err => {
             alert("無法啟動相機: " + err);
             stopScanner();
@@ -453,14 +443,16 @@
                         <label><input type="radio" name="q${i}" value="異常"> 異常</label>
                     </div></div>`).join('');
                 
-                // 檢查未完成紀錄
+                // 檢查未完成紀錄 (配合 Excel 欄位右移調整 Index)
                 const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
                 const logs = await resLogs.json();
-                const unfinished = logs.slice(1).reverse().find(r => r[0].toString() === id.toString() && !r[5] && r[6] === getPhoneID());
+                const unfinished = logs.slice(1).reverse().find(r => r[0].toString() === id.toString() && !r[7] && r[8] === getPhoneID());
                 if (unfinished) {
-                    document.getElementById('testModel').value = unfinished[2];
-                    document.getElementById('testerName').value = unfinished[3];
-                    document.getElementById('startTime').value = formatForInput(unfinished[4]);
+                    document.getElementById('idesignNo').value = unfinished[2] || '';
+                    document.getElementById('workItemSelect').value = unfinished[3] || '';
+                    document.getElementById('testModel').value = unfinished[4] || '';
+                    document.getElementById('testerName').value = unfinished[5] || '';
+                    document.getElementById('startTime').value = formatForInput(unfinished[6]);
                     document.getElementById('endTime').value = getNowStr();
                     document.getElementById('endTime').style.border = "2px solid red";
                 }
@@ -478,9 +470,10 @@
             const now = new Date();
             const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
+            // 配合 Excel 欄位順序：G 欄 (index 6) 為開始時間
             const rows = data.slice(1).filter(r => {
-                if (!r[4]) return false;
-                return r[0].toString() === id.toString() && r[4].toString().startsWith(currentMonthStr);
+                if (!r[6]) return false;
+                return r[0].toString() === id.toString() && r[6].toString().startsWith(currentMonthStr);
             }).reverse();
 
             if (rows.length === 0) {
@@ -494,8 +487,8 @@
                     return val.toString().replace('T', ' ').substring(0, 16);
                 };
 
-                const startTime = rawFormat(r[4]) || '---';
-                const endTime = rawFormat(r[5]) || '<span style="color:#dc3545; font-weight:bold;">進行中</span>';
+                const startTime = rawFormat(r[6]) || '---';
+                const endTime = rawFormat(r[7]) || '<span style="color:#dc3545; font-weight:bold;">進行中</span>';
                 
                 const isDropTester = (cat === "Drop tester");
                 const endTimeHTML = isDropTester ? '' : `
@@ -507,8 +500,8 @@
                 return `
                     <div class="log-item">
                         <div class="log-header">
-                            <span>機種: ${r[2]}</span>
-                            <span style="font-weight:normal; color:#666;">使用者: ${r[3]}</span>
+                            <span>機種: ${r[4]}</span>
+                            <span style="font-weight:normal; color:#666;">使用者: ${r[5]}</span>
                         </div>
                         <div class="log-body">
                             <div class="log-time-row">
@@ -559,10 +552,10 @@
             category: category,
             id: document.getElementById('displayDevID').innerText.replace("ID: ",""),
             name: document.getElementById('displayDevName').innerText,
+            idesignNo: document.getElementById('idesignNo').value,
+            workItem: document.getElementById('workItemSelect').value,
             model: document.getElementById('testModel').value,
             user: document.getElementById('testerName').value,
-            workItem: document.getElementById('workItemSelect').value,
-            idesignNo: document.getElementById('idesignNo').value,
             start: startVal ? startVal.replace("T", " ") : "",
             end: endVal ? endVal.replace("T", " ") : "",
             checks: checksArray
