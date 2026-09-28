@@ -278,18 +278,18 @@
     }
 
    /* 處理 IDesign API 抓取邏輯 (前端直連，需開 VPN) */
-    async function fetchIDesignData(requestID) {
+    /* 處理 IDesign API 抓取邏輯 (加上 CORS Proxy) */
+async function fetchIDesignData(requestID) {
     if (!requestID) return;
     
-    // 前端直接存取內網 API
-    const directApiUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
-
+    // 原本內網網址
+    const targetUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
+    
     // 使用 corsproxy.io 進行代理包裝
     const proxyApiUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-        
+    
     try {
-        // 使用 no-cors 或一般 fetch 讀取
-        const res = await fetch(directApiUrl);
+        const res = await fetch(proxyApiUrl);
         
         if (!res.ok) {
             throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
