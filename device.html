@@ -246,7 +246,7 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxNuuILhE_40YTeDze9SivgMSaPT0w3RhoTqIQg9LGNInnJKa5cXKGMQXu4Ccxo3Q/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcHjQWcfU401VUA9G9FT-hbIoY30LMFb2qQGvxOxk_JLAvI-PD9BdvsC0V3fk8kd0/exec";
     const ADMIN_PASSWORD = "admin";
     const CHECK_CONFIG = {
         "General chamber": ["電源是否正常？(Input V ± 10%)", "水槽及水位器，水位是否正常？", "感濕棉布是否潔淨，吸水性是否良好？", "溼度保護器是否設定於 130℃~150℃ 間？", "蒸餾水是否足夠？", "環境溫溼度是否合乎規定？"],
@@ -277,55 +277,58 @@
         fetchIDesignData(val);
     }
 
-    /* 處理 IDesign API 抓取邏輯 (經 GAS 轉接) */
-    async function fetchIDesignData(requestID) {
-        if (!requestID) return;
-        const gasApiUrl = `${GOOGLE_SCRIPT_URL}?type=getIDesign&requestId=${encodeURIComponent(requestID.trim())}`;
+   /* 處理 IDesign API 抓取邏輯 (前端直連，需開 VPN) */
+async function fetchIDesignData(requestID) {
+    if (!requestID) return;
+    
+    // 前端直接存取內網 API
+    const directApiUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
+    
+    try {
+        // 使用 no-cors 或一般 fetch 讀取
+        const res = await fetch(directApiUrl);
         
-        try {
-            const res = await fetch(gasApiUrl);
-            const data = await res.json();
-            
-            if (data.error) {
-                alert("API 轉接錯誤：" + data.error);
-                return;
-            }
-
-            if (Array.isArray(data) && data.length > 0) {
-                const firstItem = data[0];
-                
-                // 1. 自動填入機種型號
-                if (firstItem.ProductName) {
-                    document.getElementById('testModel').value = firstItem.ProductName;
-                }
-                
-                // 2. 自動填入使用者姓名 (@ 前方的字串)
-                if (firstItem.Engineer) {
-                    const engineerName = firstItem.Engineer.split('@')[0];
-                    document.getElementById('testerName').value = engineerName;
-                }
-                
-                // 3. 提取所有相異的 WorkItem 自動產生選單選項
-                const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
-                const selectElem = document.getElementById('workItemSelect');
-                selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
-                
-                workItems.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item;
-                    opt.textContent = item;
-                    selectElem.appendChild(opt);
-                });
-                if (workItems.length > 0) selectElem.selectedIndex = 1;
-
-            } else {
-                alert("未找到對應的 IDesign 資料");
-            }
-        } catch (e) {
-            console.error("Fetch IDesign API Error:", e);
-            alert("讀取 IDesign API 失敗，請確認網路連線或 RequestID 是否正確");
+        if (!res.ok) {
+            throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
         }
+        
+        const data = await res.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+            const firstItem = data[0];
+            
+            // 1. 自動填入機種型號 (ProductName)
+            if (firstItem.ProductName) {
+                document.getElementById('testModel').value = firstItem.ProductName;
+            }
+            
+            // 2. 自動填入使用者姓名 (Engineer @ 前方的字串)
+            if (firstItem.Engineer) {
+                const engineerName = firstItem.Engineer.split('@')[0];
+                document.getElementById('testerName').value = engineerName;
+            }
+            
+            // 3. 提取所有相異的 WorkItem 自動產生選單選項
+            const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
+            const selectElem = document.getElementById('workItemSelect');
+            selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
+            
+            workItems.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                selectElem.appendChild(opt);
+            });
+            if (workItems.length > 0) selectElem.selectedIndex = 1;
+
+        } else {
+            alert("未找到對應的 IDesign 資料");
+        }
+    } catch (e) {
+        console.error("Fetch IDesign API Error:", e);
+        alert("讀取 IDesign API 失敗！\n請確認您的設備已開啟 VPN 並連至公司內網。");
     }
+}
 
     /* 相機 QR 掃描器控制 */
     function startScanner() {
