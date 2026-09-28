@@ -277,19 +277,15 @@
         fetchIDesignData(val);
     }
 
-   /* 處理 IDesign API 抓取邏輯 (前端直連，需開 VPN) */
-    /* 處理 IDesign API 抓取邏輯 (加上 CORS Proxy) */
-async function fetchIDesignData(requestID) {
+   /* 處理 IDesign API 抓取邏輯 (瀏覽器開啟 VPN + Allow CORS 擴充套件) */
+    async function fetchIDesignData(requestID) {
     if (!requestID) return;
     
-    // 原本內網網址
+    // 直接存取研華內網 API 網址
     const targetUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
     
-    // 使用 corsproxy.io 進行代理包裝
-    const proxyApiUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-    
     try {
-        const res = await fetch(proxyApiUrl);
+        const res = await fetch(targetUrl);
         
         if (!res.ok) {
             throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
@@ -329,7 +325,7 @@ async function fetchIDesignData(requestID) {
         }
     } catch (e) {
         console.error("Fetch IDesign API Error:", e);
-        alert("讀取 IDesign API 失敗！\n請確認您的設備已開啟 VPN 並連至公司內網。");
+        alert("讀取 IDesign API 失敗！\n請確認已開啟 Allow CORS 擴充套件與 VPN。");
     }
 }
 
