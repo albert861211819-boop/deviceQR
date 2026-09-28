@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>雲端同步設備管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
-    <!-- 引入 QR Code 掃描套件 -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
@@ -41,7 +40,8 @@
         
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
-        .btn-qr { background: var(--primary); color: white; margin-right: 5px; }
+        .btn-qr { background: var(--primary); color: white; }
+        .btn-confirm { background: #17a2b8; color: white; }
         .btn-edit { background: #ffc107; color: #212529; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -138,7 +138,6 @@
 <body>
 
 <div class="container">
-    <!-- 管理者面板 -->
     <div id="adminPanel" class="admin-box hidden">
         <h3 id="adminTitle" style="color:var(--admin); margin-top:0;">🔧 設備管理清單</h3>
         <input type="text" id="devName" placeholder="輸入設備名稱">
@@ -158,7 +157,6 @@
         </table>
     </div>
 
-    <!-- QR Code 顯示彈窗 -->
     <div id="qrOverlay" class="hidden" onclick="closeQR()">
         <div class="qr-modal" onclick="event.stopPropagation()">
             <div id="qrcode" style="display: flex; justify-content: center; margin-bottom: 15px;"></div>
@@ -168,7 +166,6 @@
         </div>
     </div>
 
-    <!-- 相機 QR Code 掃描器彈窗 -->
     <div id="scannerOverlay" class="hidden">
         <div class="scanner-container">
             <h4 style="margin-top:0; margin-bottom:10px;">請對準 QR Code 掃描</h4>
@@ -177,16 +174,15 @@
         </div>
     </div>
 
-    <!-- 測試/點檢頁面 -->
     <div id="testView" class="hidden">
         <h2 id="displayDevName" style="margin-bottom: 5px;">載入中...</h2>
         <small id="displayDevID" style="color:#666; font-size:14px; display:block; margin-bottom:15px;"></small>
         
         <div class="card">
-            <!-- 新增 IDesign No. 與掃描按鈕 -->
             <label>IDesign No.</label>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <input type="text" id="idesignNo" placeholder="輸入或掃描 IDesign No." style="margin-bottom: 0;" onchange="fetchIDesignData(this.value)">
+            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                <input type="text" id="idesignNo" placeholder="輸入或掃描 IDesign No." style="margin-bottom: 0;" onkeydown="if(event.key==='Enter') submitIDesign();">
+                <button type="button" class="btn-confirm" style="white-space: nowrap; padding: 0 12px;" onclick="submitIDesign()">確認</button>
                 <button type="button" class="btn-qr" style="white-space: nowrap; padding: 0 12px;" onclick="startScanner()">掃描 QR</button>
             </div>
 
@@ -196,7 +192,6 @@
             <label>使用者姓名</label>
             <input type="text" id="testerName" placeholder="使用者姓名">
             
-            <!-- 新增測試項目下拉選單 -->
             <label>測試項目</label>
             <select id="workItemSelect">
                 <option value="">-- 請選擇或帶入測試項目 --</option>
@@ -210,13 +205,11 @@
                 <input type="datetime-local" id="endTime">
             </div>
             
-            <!-- 一般點檢項目 -->
             <div id="checkItems">
                 <h4 style="margin-bottom: 10px;">📋 點檢項目</h4>
                 <div id="normalChecks"></div>
             </div>
 
-            <!-- Drop Tester 專用輸入欄位 -->
             <div id="dropInputs" class="hidden">
                 <h4 style="margin-bottom: 10px;">📦 Drop Data</h4>
                 <input type="number" id="dropL" placeholder="Length (mm)">
@@ -274,58 +267,65 @@
         if (id) showTestPage(id);
     };
 
-
-    /* 修改後的 IDesign API 抓取邏輯 (經 GAS 轉接) */
-    async function fetchIDesignData(requestID) {
-    if (!requestID) return;
-    
-    // 改為透過 GOOGLE_SCRIPT_URL 轉接請求
-    const gasApiUrl = `${GOOGLE_SCRIPT_URL}?type=getIDesign&requestId=${encodeURIComponent(requestID.trim())}`;
-    
-    try {
-        const res = await fetch(gasApiUrl);
-        const data = await res.json();
-        
-        if (data.error) {
-            alert("API 轉接錯誤：" + data.error);
+    /* 觸發確認按鈕事件 */
+    function submitIDesign() {
+        const val = document.getElementById('idesignNo').value;
+        if (!val) {
+            alert("請先輸入 IDesign No.");
             return;
         }
-
-        if (Array.isArray(data) && data.length > 0) {
-            const firstItem = data[0];
-            
-            // 1. 自動填入機種型號
-            if (firstItem.ProductName) {
-                document.getElementById('testModel').value = firstItem.ProductName;
-            }
-            
-            // 2. 自動填入使用者姓名 (@ 前方的字串)
-            if (firstItem.Engineer) {
-                const engineerName = firstItem.Engineer.split('@')[0];
-                document.getElementById('testerName').value = engineerName;
-            }
-            
-            // 3. 提取所有相異的 WorkItem 自動產生選單選項
-            const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
-            const selectElem = document.getElementById('workItemSelect');
-            selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
-            
-            workItems.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item;
-                opt.textContent = item;
-                selectElem.appendChild(opt);
-            });
-            if (workItems.length > 0) selectElem.selectedIndex = 1;
-
-        } else {
-            alert("未找到對應的 IDesign 資料");
-        }
-    } catch (e) {
-        console.error("Fetch IDesign API Error:", e);
-        alert("讀取 IDesign API 失敗，請確認網路連線或 RequestID 是否正確");
+        fetchIDesignData(val);
     }
-}
+
+    /* 處理 IDesign API 抓取邏輯 (經 GAS 轉接) */
+    async function fetchIDesignData(requestID) {
+        if (!requestID) return;
+        const gasApiUrl = `${GOOGLE_SCRIPT_URL}?type=getIDesign&requestId=${encodeURIComponent(requestID.trim())}`;
+        
+        try {
+            const res = await fetch(gasApiUrl);
+            const data = await res.json();
+            
+            if (data.error) {
+                alert("API 轉接錯誤：" + data.error);
+                return;
+            }
+
+            if (Array.isArray(data) && data.length > 0) {
+                const firstItem = data[0];
+                
+                // 1. 自動填入機種型號
+                if (firstItem.ProductName) {
+                    document.getElementById('testModel').value = firstItem.ProductName;
+                }
+                
+                // 2. 自動填入使用者姓名 (@ 前方的字串)
+                if (firstItem.Engineer) {
+                    const engineerName = firstItem.Engineer.split('@')[0];
+                    document.getElementById('testerName').value = engineerName;
+                }
+                
+                // 3. 提取所有相異的 WorkItem 自動產生選單選項
+                const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
+                const selectElem = document.getElementById('workItemSelect');
+                selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
+                
+                workItems.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    selectElem.appendChild(opt);
+                });
+                if (workItems.length > 0) selectElem.selectedIndex = 1;
+
+            } else {
+                alert("未找到對應的 IDesign 資料");
+            }
+        } catch (e) {
+            console.error("Fetch IDesign API Error:", e);
+            alert("讀取 IDesign API 失敗，請確認網路連線或 RequestID 是否正確");
+        }
+    }
 
     /* 相機 QR 掃描器控制 */
     function startScanner() {
