@@ -274,50 +274,57 @@
         if (id) showTestPage(id);
     };
 
-    /* 處理 IDesign API 抓取邏輯 */
+    /* 修改後的 IDesign API 抓取邏輯 (經 GAS 轉接) */
     async function fetchIDesignData(requestID) {
-        if (!requestID) return;
-        const apiUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
+    if (!requestID) return;
+    
+    // 改為透過 GOOGLE_SCRIPT_URL 轉接請求
+    const gasApiUrl = `${GOOGLE_SCRIPT_URL}?type=getIDesign&requestId=${encodeURIComponent(requestID.trim())}`;
+    
+    try {
+        const res = await fetch(gasApiUrl);
+        const data = await res.json();
         
-        try {
-            const res = await fetch(apiUrl);
-            const data = await res.json();
-            
-            if (Array.isArray(data) && data.length > 0) {
-                const firstItem = data[0];
-                
-                // 1. 自動填入機種型號
-                if (firstItem.ProductName) {
-                    document.getElementById('testModel').value = firstItem.ProductName;
-                }
-                
-                // 2. 自動填入使用者姓名 (@ 前方的字串)
-                if (firstItem.Engineer) {
-                    const engineerName = firstItem.Engineer.split('@')[0];
-                    document.getElementById('testerName').value = engineerName;
-                }
-                
-                // 3. 提取所有相異的 WorkItem 自動產生選單選項
-                const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
-                const selectElem = document.getElementById('workItemSelect');
-                selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
-                
-                workItems.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item;
-                    opt.textContent = item;
-                    selectElem.appendChild(opt);
-                });
-                if (workItems.length > 0) selectElem.selectedIndex = 1;
-
-            } else {
-                alert("未找到對應的 IDesign 資料");
-            }
-        } catch (e) {
-            console.error("Fetch IDesign API Error:", e);
-            alert("讀取 IDesign API 失敗，請確認網路連線或 RequestID 是否正確");
+        if (data.error) {
+            alert("API 轉接錯誤：" + data.error);
+            return;
         }
+
+        if (Array.isArray(data) && data.length > 0) {
+            const firstItem = data[0];
+            
+            // 1. 自動填入機種型號
+            if (firstItem.ProductName) {
+                document.getElementById('testModel').value = firstItem.ProductName;
+            }
+            
+            // 2. 自動填入使用者姓名 (@ 前方的字串)
+            if (firstItem.Engineer) {
+                const engineerName = firstItem.Engineer.split('@')[0];
+                document.getElementById('testerName').value = engineerName;
+            }
+            
+            // 3. 提取所有相異的 WorkItem 自動產生選單選項
+            const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
+            const selectElem = document.getElementById('workItemSelect');
+            selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
+            
+            workItems.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.textContent = item;
+                selectElem.appendChild(opt);
+            });
+            if (workItems.length > 0) selectElem.selectedIndex = 1;
+
+        } else {
+            alert("未找到對應的 IDesign 資料");
+        }
+    } catch (e) {
+        console.error("Fetch IDesign API Error:", e);
+        alert("讀取 IDesign API 失敗，請確認網路連線或 RequestID 是否正確");
     }
+}
 
     /* 相機 QR 掃描器控制 */
     function startScanner() {
