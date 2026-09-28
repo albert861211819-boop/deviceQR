@@ -274,6 +274,10 @@
         if (id) showTestPage(id);
     };
 
+    function testFetch() {
+      UrlFetchApp.fetch("https://www.google.com");
+    }
+
     /* 修改後的 IDesign API 抓取邏輯 (經 GAS 轉接) */
     async function fetchIDesignData(requestID) {
     if (!requestID) return;
