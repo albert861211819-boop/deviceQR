@@ -5,134 +5,145 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>雲端同步設備管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
+    <!-- 引入 QR Code 掃描套件 -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
         .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .hidden { display: none !important; }
         
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
         input, select { 
-        width: 100%; 
-        padding: 10px; 
-        margin-bottom: 12px; 
-        border: 1px solid #ddd; 
-        border-radius: 6px; 
-        box-sizing: border-box; 
-        font-size: 16px; 
-        display: block;
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            display: block;
         }
         label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
         
-        /* 讓時間輸入框不要佔滿整行，且與標題並排 */
-       
+        /* 時間輸入框樣式 */
         input[type="datetime-local"] {
-        width: 100% !important; 
-        max-width: 220px !important;    
-        flex-grow: 1;
-        margin-bottom: 15px; /* 移除下外距 */
-        padding: 5px;
-        border: 1px solid #ccc;
-        font-size: 16px;
-        height: 25px; /* 稍微縮小高度 */
+            width: 100% !important; 
+            max-width: 220px !important;    
+            flex-grow: 1;
+            margin-bottom: 15px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            height: 38px;
         }
         
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; }
+        .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
         .btn-qr { background: var(--primary); color: white; margin-right: 5px; }
         .btn-edit { background: #ffc107; color: #212529; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
 
-        .check-row { display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        padding: 12px 0; 
-        border-bottom: 1px solid #eee;
-        gap: 10px; /* 項目與選項間距 */ }
+        .check-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 12px 0; 
+            border-bottom: 1px solid #eee;
+            gap: 10px; 
+        }
         
         .check-label { 
-        flex: 1; /* 讓名稱佔據剩餘空間 */
-        font-size: 14px; 
-        color: #333; 
-        line-height: 1.3;
-        word-break: break-all;
+            flex: 1; 
+            font-size: 14px; 
+            color: #333; 
+            line-height: 1.3;
+            word-break: break-all;
         }
         .check-options { 
-        display: flex; 
-        gap: 12px; 
-        flex-shrink: 0; /* 禁止選項縮小 */
+            display: flex; 
+            gap: 12px; 
+            flex-shrink: 0; 
         }
         .check-options label { 
-        display: flex !important; 
-        align-items: center !important; 
-        margin-bottom: 0; 
-        font-size: 14px; 
-        white-space: nowrap; /* 確保正常/異常不換行 */
-        cursor: pointer;
+            display: flex !important; 
+            align-items: center !important; 
+            margin-bottom: 0; 
+            font-size: 14px; 
+            white-space: nowrap; 
+            cursor: pointer;
         }
 
         .check-options input[type="radio"] { 
-        width: 18px !important; 
-        height: 18px !important; 
-        margin: 0 4px 0 0 !important; 
-        flex-shrink: 0;
+            width: 18px !important; 
+            height: 18px !important; 
+            margin: 0 4px 0 0 !important; 
+            flex-shrink: 0;
         }
 
         /* 摺疊面板樣式 */
-.collapsible {
-    background-color: #eee;
-    color: #444;
-    cursor: pointer;
-    padding: 12px;
-    width: 100%;
-    border: none;
-    text-align: left;
-    outline: none;
-    font-size: 15px;
-    font-weight: bold;
-    border-radius: 6px;
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
-}
-.active, .collapsible:hover { background-color: #ddd; }
-.collapsible:after { content: '\002B'; font-weight: bold; float: right; }
-.active:after { content: "\2212"; }
-.content {
-    padding: 0 15px;
-    display: none;
-    overflow: hidden;
-    background-color: #f9f9f9;
-    border: 1px solid #eee;
-    border-radius: 0 0 6px 6px;
-}
-.g-input-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 15px 0;
-}
-.g-input-grid input { margin-bottom: 5px !important; }
+        .collapsible {
+            background-color: #eee;
+            color: #444;
+            cursor: pointer;
+            padding: 12px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .active, .collapsible:hover { background-color: #ddd; }
+        .collapsible:after { content: '\002B'; font-weight: bold; float: right; }
+        .active:after { content: "\2212"; }
         
-        #qrOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .content {
+            padding: 0 15px;
+            display: none;
+            overflow: hidden;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 0 0 6px 6px;
+        }
+        .g-input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 15px 0;
+        }
+        .g-input-grid input { margin-bottom: 5px !important; }
+        
+        #qrOverlay, #scannerOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .qr-modal { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 85%; }
 
         .log-item { background: #f8f9fa; border-left: 5px solid var(--primary); padding: 12px; margin-bottom: 10px; border-radius: 4px; }
         .log-header { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; justify-content: space-between; }
-        .log-time { font-size: 12px; color: #666; }
+        .log-time-row { font-size: 13px; color: #666; margin-top: 3px; display: flex; gap: 6px; }
+        .time-tag { font-weight: bold; }
+
+        /* 相機掃描視窗專用樣式 */
+        .scanner-container { width: 300px; background: white; padding: 15px; border-radius: 12px; text-align: center; }
+        #reader { width: 100%; }
     </style> 
 </head>
 <body>
 
 <div class="container">
+    <!-- 管理者面板 -->
     <div id="adminPanel" class="admin-box hidden">
         <h3 id="adminTitle" style="color:var(--admin); margin-top:0;">🔧 設備管理清單</h3>
         <input type="text" id="devName" placeholder="輸入設備名稱">
         <input type="text" id="devID" placeholder="輸入編號 (ID)">
-        <select id="devCategory" style="width:100%; padding:12px; margin-bottom:15px; border-radius:6px;">
+        <select id="devCategory">
             <option value="General chamber">General chamber</option>
             <option value="Convection chamber">Convection chamber</option>
             <option value="Vibration tester">Vibration tester</option>
@@ -147,56 +158,89 @@
         </table>
     </div>
 
+    <!-- QR Code 顯示彈窗 -->
     <div id="qrOverlay" class="hidden" onclick="closeQR()">
         <div class="qr-modal" onclick="event.stopPropagation()">
-            <div id="qrcode"></div>
-            <h3 id="qrName"></h3>
-            <p id="qrID"></p>
+            <div id="qrcode" style="display: flex; justify-content: center; margin-bottom: 15px;"></div>
+            <h3 id="qrName" style="margin: 5px 0;"></h3>
+            <p id="qrID" style="color:#666; margin-bottom: 15px;"></p>
             <button onclick="closeQR()" style="background:#333; color:white; width:100%;">關閉</button>
         </div>
     </div>
 
+    <!-- 相機 QR Code 掃描器彈窗 -->
+    <div id="scannerOverlay" class="hidden">
+        <div class="scanner-container">
+            <h4 style="margin-top:0; margin-bottom:10px;">請對準 QR Code 掃描</h4>
+            <div id="reader"></div>
+            <button onclick="stopScanner()" style="background:#dc3545; color:white; width:100%; margin-top:10px;">取消掃描</button>
+        </div>
+    </div>
+
+    <!-- 測試/點檢頁面 -->
     <div id="testView" class="hidden">
-        <h2 id="displayDevName">載入中...</h2>
-        <small id="displayDevID"></small>
+        <h2 id="displayDevName" style="margin-bottom: 5px;">載入中...</h2>
+        <small id="displayDevID" style="color:#666; font-size:14px; display:block; margin-bottom:15px;"></small>
         
         <div class="card">
+            <!-- 新增 IDesign No. 與掃描按鈕 -->
+            <label>IDesign No.</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="idesignNo" placeholder="輸入或掃描 IDesign No." style="margin-bottom: 0;" onchange="fetchIDesignData(this.value)">
+                <button type="button" class="btn-qr" style="white-space: nowrap; padding: 0 12px;" onclick="startScanner()">掃描 QR</button>
+            </div>
+
+            <label>機種型號</label>
             <input type="text" id="testModel" placeholder="機種型號">
+            
+            <label>使用者姓名</label>
             <input type="text" id="testerName" placeholder="使用者姓名">
-            <label>開始時間</label><input type="datetime-local" id="startTime">
+            
+            <!-- 新增測試項目下拉選單 -->
+            <label>測試項目</label>
+            <select id="workItemSelect">
+                <option value="">-- 請選擇或帶入測試項目 --</option>
+            </select>
+
+            <label>開始時間</label>
+            <input type="datetime-local" id="startTime">
+            
             <div id="endTimeWrapper">
-                <label>結束時間</label><input type="datetime-local" id="endTime">
+                <label>結束時間</label>
+                <input type="datetime-local" id="endTime">
             </div>
             
+            <!-- 一般點檢項目 -->
             <div id="checkItems">
-                <h4>📋 點檢項目</h4>
+                <h4 style="margin-bottom: 10px;">📋 點檢項目</h4>
                 <div id="normalChecks"></div>
             </div>
 
+            <!-- Drop Tester 專用輸入欄位 -->
             <div id="dropInputs" class="hidden">
-                <h4>📦 Drop Data</h4>
+                <h4 style="margin-bottom: 10px;">📦 Drop Data</h4>
                 <input type="number" id="dropL" placeholder="Length (mm)">
                 <input type="number" id="dropW" placeholder="Width (mm)">
                 <input type="number" id="dropH" placeholder="Height (mm)">
                 <input type="number" id="dropWeight" placeholder="Weight (kg)">
                 <input type="number" id="dropHeight" placeholder="Drop height (mm)">
 
-            <button type="button" class="collapsible" onclick="toggleCollapsible(this)">加速規數值錄入 (g)</button>
-            <div class="content">
-            <div class="g-input-grid">
-            <input type="number" id="g_corner" placeholder="Corner">
-            <input type="number" id="g_short_e" placeholder="Short edge">
-            <input type="number" id="g_mid_e" placeholder="Mid edge">
-            <input type="number" id="g_long_e" placeholder="Long edge">
-            <input type="number" id="g_small_f" placeholder="Small face">
-            <input type="number" id="g_opp_small_f" placeholder="Oppsite small f.">
-            <input type="number" id="g_mid_f" placeholder="Mid face">
-            <input type="number" id="g_opp_mid_f" placeholder="Oppsite mid f.">
-            <input type="number" id="g_large_f" placeholder="Large face">
-            <input type="number" id="g_opp_large_s" placeholder="Oppsite large s.">      
-        </div>
-    </div>             
-</div>
+                <button type="button" class="collapsible" onclick="toggleCollapsible(this)">加速規數值錄入 (g)</button>
+                <div class="content">
+                    <div class="g-input-grid">
+                        <input type="number" id="g_corner" placeholder="Corner">
+                        <input type="number" id="g_short_e" placeholder="Short edge">
+                        <input type="number" id="g_mid_e" placeholder="Mid edge">
+                        <input type="number" id="g_long_e" placeholder="Long edge">
+                        <input type="number" id="g_small_f" placeholder="Small face">
+                        <input type="number" id="g_opp_small_f" placeholder="Oppsite small f.">
+                        <input type="number" id="g_mid_f" placeholder="Mid face">
+                        <input type="number" id="g_opp_mid_f" placeholder="Oppsite mid f.">
+                        <input type="number" id="g_large_f" placeholder="Large face">
+                        <input type="number" id="g_opp_large_s" placeholder="Oppsite large s.">      
+                    </div>
+                </div>             
+            </div>
             
             <button id="submitBtn" class="btn-submit" onclick="saveToLog()">確認送出紀錄</button>
         </div>
@@ -218,6 +262,8 @@
         "Shock tester": ["確認氣壓瓶內壓力量是否足夠？", "檢查氣壓式彈簧氣墊是否異常？", "確認機台是否水平？", "確認電源開關、近接開關、E.M.G.按鈕是否異常？", "不相關物品不要放置於輔助平台上，以免影響測試。"]
     };
 
+    let html5QrCode = null;
+
     window.onload = async function() {
         const params = new URLSearchParams(window.location.search);
         if (params.get('mode') === ADMIN_PASSWORD) {
@@ -228,22 +274,100 @@
         if (id) showTestPage(id);
     };
 
+    /* 處理 IDesign API 抓取邏輯 */
+    async function fetchIDesignData(requestID) {
+        if (!requestID) return;
+        const apiUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
+        
+        try {
+            const res = await fetch(apiUrl);
+            const data = await res.json();
+            
+            if (Array.isArray(data) && data.length > 0) {
+                const firstItem = data[0];
+                
+                // 1. 自動填入機種型號
+                if (firstItem.ProductName) {
+                    document.getElementById('testModel').value = firstItem.ProductName;
+                }
+                
+                // 2. 自動填入使用者姓名 (@ 前方的字串)
+                if (firstItem.Engineer) {
+                    const engineerName = firstItem.Engineer.split('@')[0];
+                    document.getElementById('testerName').value = engineerName;
+                }
+                
+                // 3. 提取所有相異的 WorkItem 自動產生選單選項
+                const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
+                const selectElem = document.getElementById('workItemSelect');
+                selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
+                
+                workItems.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    selectElem.appendChild(opt);
+                });
+                if (workItems.length > 0) selectElem.selectedIndex = 1;
+
+            } else {
+                alert("未找到對應的 IDesign 資料");
+            }
+        } catch (e) {
+            console.error("Fetch IDesign API Error:", e);
+            alert("讀取 IDesign API 失敗，請確認網路連線或 RequestID 是否正確");
+        }
+    }
+
+    /* 相機 QR 掃描器控制 */
+    function startScanner() {
+        document.getElementById('scannerOverlay').classList.remove('hidden');
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 200, height: 200 } },
+            (decodedText) => {
+                document.getElementById('idesignNo').value = decodedText;
+                stopScanner();
+                fetchIDesignData(decodedText);
+            },
+            (errorMessage) => { /* 掃描過程中忽略持續發生的失敗 */ }
+        ).catch(err => {
+            alert("無法啟動相機: " + err);
+            stopScanner();
+        });
+    }
+
+    function stopScanner() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('scannerOverlay').classList.add('hidden');
+            }).catch(err => {
+                console.error("Stop scanner error:", err);
+                document.getElementById('scannerOverlay').classList.add('hidden');
+            });
+        } else {
+            document.getElementById('scannerOverlay').classList.add('hidden');
+        }
+    }
+
     function toggleCollapsible(btn) {
-    btn.classList.toggle("active");
-    var content = btn.nextElementSibling;
-    content.style.display = (content.style.display === "block") ? "none" : "block";
+        btn.classList.toggle("active");
+        var content = btn.nextElementSibling;
+        content.style.display = (content.style.display === "block") ? "none" : "block";
     }
     
     function getNowStr() {
-    const now = new Date();
-    // 透過本地時間直接獲取數值，避開 ISOString 的時區轉換問題
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    const h = String(now.getHours()).padStart(2, '0'); // 這裡會抓到手機本地 24 小時制
-    const min = String(now.getMinutes()).padStart(2, '0');
-    
-    return `${y}-${m}-${d}T${h}:${min}`;
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        
+        return `${y}-${m}-${d}T${h}:${min}`;
     }
 
     function getPhoneID() {
@@ -282,6 +406,7 @@
         document.getElementById('qrcode').innerHTML = "";
         new QRCode(document.getElementById('qrcode'), window.location.origin + window.location.pathname + "?id=" + id);
         document.getElementById('qrName').innerText = name;
+        document.getElementById('qrID').innerText = "ID: " + id;
         document.getElementById('qrOverlay').classList.remove('hidden');
     }
 
@@ -306,9 +431,13 @@
                 document.getElementById('checkItems').classList.add('hidden');
                 document.getElementById('endTimeWrapper').classList.add('hidden');
             } else {
+                document.getElementById('dropInputs').classList.add('hidden');
+                document.getElementById('checkItems').classList.remove('hidden');
+                document.getElementById('endTimeWrapper').classList.remove('hidden');
+
                 const items = CHECK_CONFIG[category] || [];
                 document.getElementById('normalChecks').innerHTML = items.map((t, i) => `
-                    <div class="check-row"><span>${t}</span>
+                    <div class="check-row"><span class="check-label">${t}</span>
                     <div class="check-options">
                         <label><input type="radio" name="q${i}" value="正常" checked> 正常</label>
                         <label><input type="radio" name="q${i}" value="異常"> 異常</label>
@@ -331,69 +460,88 @@
     }
 
     async function fetchCloudLogs(id, cat) {
-    const content = document.getElementById('logContent');
-    try {
-        const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(cat)}`);
-        const data = await res.json();
-        
-        const now = new Date();
-        const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-
-        const rows = data.slice(1).filter(r => {
-            if (!r[4]) return false;
-            return r[0].toString() === id.toString() && r[4].toString().startsWith(currentMonthStr);
-        }).reverse();
-
-        if (rows.length === 0) {
-            content.innerHTML = "<p style='text-align:center; color:#999; font-size:14px;'>本月尚無紀錄</p>";
-            return;
-        }
-
-        content.innerHTML = rows.map(r => {
-            const rawFormat = (val) => {
-                if (!val) return null;
-                return val.toString().replace('T', ' ').substring(0, 16);
-            };
-
-            const startTime = rawFormat(r[4]) || '---';
-            const endTime = rawFormat(r[5]) || '<span style="color:#dc3545; font-weight:bold;">進行中</span>';
+        const content = document.getElementById('logContent');
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(cat)}`);
+            const data = await res.json();
             
-            // --- 關鍵修正：判斷是否為 Drop tester ---
-            const isDropTester = (cat === "Drop tester");
-            const endTimeHTML = isDropTester ? '' : `
-                <div class="log-time-row">
-                    <span class="time-tag">終:</span>
-                    <span class="time-val">${endTime}</span>
-                </div>`;
+            const now = new Date();
+            const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-            return `
-                <div class="log-item">
-                    <div class="log-header">
-                        <span>機種: ${r[2]}</span>
-                        <span style="font-weight:normal; color:#666;">使用者: ${r[3]}</span>
-                    </div>
-                    <div class="log-body">
-                        <div class="log-time-row">
-                            <span class="time-tag">始:</span>
-                            <span class="time-val">${startTime}</span>
+            const rows = data.slice(1).filter(r => {
+                if (!r[4]) return false;
+                return r[0].toString() === id.toString() && r[4].toString().startsWith(currentMonthStr);
+            }).reverse();
+
+            if (rows.length === 0) {
+                content.innerHTML = "<p style='text-align:center; color:#999; font-size:14px;'>本月尚無紀錄</p>";
+                return;
+            }
+
+            content.innerHTML = rows.map(r => {
+                const rawFormat = (val) => {
+                    if (!val) return null;
+                    return val.toString().replace('T', ' ').substring(0, 16);
+                };
+
+                const startTime = rawFormat(r[4]) || '---';
+                const endTime = rawFormat(r[5]) || '<span style="color:#dc3545; font-weight:bold;">進行中</span>';
+                
+                const isDropTester = (cat === "Drop tester");
+                const endTimeHTML = isDropTester ? '' : `
+                    <div class="log-time-row">
+                        <span class="time-tag">終:</span>
+                        <span class="time-val">${endTime}</span>
+                    </div>`;
+
+                return `
+                    <div class="log-item">
+                        <div class="log-header">
+                            <span>機種: ${r[2]}</span>
+                            <span style="font-weight:normal; color:#666;">使用者: ${r[3]}</span>
                         </div>
-                        ${endTimeHTML} 
-                    </div>
-                </div>`;
-        }).join('');
-    } catch (e) {
-        content.innerHTML = "<p style='text-align:center; color:red;'>紀錄載入失敗</p>";
+                        <div class="log-body">
+                            <div class="log-time-row">
+                                <span class="time-tag">始:</span>
+                                <span class="time-val">${startTime}</span>
+                            </div>
+                            ${endTimeHTML} 
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (e) {
+            content.innerHTML = "<p style='text-align:center; color:red;'>紀錄載入失敗</p>";
+        }
     }
-}
 
     async function saveToLog() {
         const category = window.currentCategory;
         let checksArray = [];
+        
         if (category === "Drop tester") {
-            checksArray = [document.getElementById('dropL').value, document.getElementById('dropW').value, document.getElementById('dropH').value, document.getElementById('dropWeight').value, document.getElementById('dropHeight').value,document.getElementById('g_corner').value,document.getElementById('g_short_e').value,document.getElementById('g_mid_e').value,document.getElementById('g_long_e').value,document.getElementById('g_small_f').value,document.getElementById('g_opp_small_f').value,document.getElementById('g_mid_f').value, document.getElementById('g_opp_mid_f').value,document.getElementById('g_large_f').value,document.getElementById('g_opp_large_s').value];
+            checksArray = [
+                document.getElementById('dropL').value,
+                document.getElementById('dropW').value,
+                document.getElementById('dropH').value,
+                document.getElementById('dropWeight').value,
+                document.getElementById('dropHeight').value,
+                document.getElementById('g_corner').value,
+                document.getElementById('g_short_e').value,
+                document.getElementById('g_mid_e').value,
+                document.getElementById('g_long_e').value,
+                document.getElementById('g_small_f').value,
+                document.getElementById('g_opp_small_f').value,
+                document.getElementById('g_mid_f').value,
+                document.getElementById('g_opp_mid_f').value,
+                document.getElementById('g_large_f').value,
+                document.getElementById('g_opp_large_s').value
+            ];
         } else {
             document.querySelectorAll('#normalChecks input:checked').forEach(i => checksArray.push(i.value));
         }
+
+        const startVal = document.getElementById('startTime').value;
+        const endVal = document.getElementById('endTime').value;
 
         const logData = {
             action: "saveLog",
@@ -403,15 +551,16 @@
             name: document.getElementById('displayDevName').innerText,
             model: document.getElementById('testModel').value,
             user: document.getElementById('testerName').value,
-            // --- 關鍵修正：將 T 換成空格，變成純字串送出 ---
-            start: document.getElementById('startTime').value.replace("T", " "),
-            end: document.getElementById('endTime').value.replace("T", " "),
+            workItem: document.getElementById('workItemSelect').value,
+            idesignNo: document.getElementById('idesignNo').value,
+            start: startVal ? startVal.replace("T", " ") : "",
+            end: endVal ? endVal.replace("T", " ") : "",
             checks: checksArray
         };
 
-        if (!logData.model || !logData.user) return alert("請填寫完整");
+        if (!logData.model || !logData.user) return alert("請填寫完整機種與使用者姓名");
         await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(logData) });
-        alert("完成");
+        alert("資料送出完成！");
         location.reload();
     }
 </script>
