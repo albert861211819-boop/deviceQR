@@ -607,7 +607,7 @@
                             const checkStatus = r[9 + index];
                             if (checkStatus === "異常") {
                                 hasCheck = "X";
-                            } else if (checkStatus === "正常" || !cellMark) {
+                            } else if (checkStatus === "正常" || !hasCheck) {
                                 hasCheck = "V";
                             }
                         }
