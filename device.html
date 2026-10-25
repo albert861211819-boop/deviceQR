@@ -431,15 +431,21 @@
         printArea.style.background = '#fff';
         printArea.style.width = '700px';
         printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea.style.position = 'relative';
 
         const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
 
+        // 開始時間只擷取年月日 (YYYY-MM-DD)
+        const rawStart = v('startTime');
+        const startDateOnly = rawStart ? rawStart.split('T')[0] : '';
+
+        // 移除了 ID，並將 QAL-003-F03 放到右下角反灰
         printArea.innerHTML = `
-            <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表 (QAL-003-F03)</h2>
+            <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表</h2>
             <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
                 <tr>
-                    <td style="padding:6px; font-weight:bold;">設備名稱/ID:</td><td>${document.getElementById('displayDevName').innerText} (${document.getElementById('displayDevID').innerText})</td>
-                    <td style="padding:6px; font-weight:bold;">IDesign No.:</td><td>${v('idesignNo')}</td>
+                    <td style="padding:6px; font-weight:bold; width:18%;">設備名稱:</td><td style="width:32%;">${document.getElementById('displayDevName').innerText}</td>
+                    <td style="padding:6px; font-weight:bold; width:18%;">IDesign No.:</td><td style="width:32%;">${v('idesignNo')}</td>
                 </tr>
                 <tr>
                     <td style="padding:6px; font-weight:bold;">機種型號:</td><td>${v('testModel')}</td>
@@ -447,7 +453,7 @@
                 </tr>
                 <tr>
                     <td style="padding:6px; font-weight:bold;">測試項目:</td><td>${v('workItemSelect')}</td>
-                    <td style="padding:6px; font-weight:bold;">開始時間:</td><td>${v('startTime')}</td>
+                    <td style="padding:6px; font-weight:bold;">開始日期:</td><td>${startDateOnly}</td>
                 </tr>
             </table>
             
@@ -460,7 +466,7 @@
             </table>
 
             <h3 style="border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
-            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px;">
+            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:25px;">
                 <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
                 <tr><td>Corner</td><td>${v('g_corner')}</td><td>Short Edge</td><td>${v('g_short_e')}</td></tr>
                 <tr><td>Mid Edge</td><td>${v('g_mid_e')}</td><td>Long Edge</td><td>${v('g_long_e')}</td></tr>
@@ -468,6 +474,9 @@
                 <tr><td>Mid Face</td><td>${v('g_mid_f')}</td><td>Opposite Mid Face</td><td>${v('g_opp_mid_f')}</td></tr>
                 <tr><td>Large Face</td><td>${v('g_large_f')}</td><td>Opposite Large Side</td><td>${v('g_opp_large_s')}</td></tr>
             </table>
+
+            <!-- 表單編號置於右下角並反灰 -->
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:10px;">QAL-003-F03</div>
         `;
 
         document.body.appendChild(printArea);
@@ -516,9 +525,8 @@
 
         let tableRowsHTML = '';
         if (rowsData.length === 0) {
-            tableRowsHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
+            tableRowsHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
         } else {
-            // 已移除測試機種欄位中的測試項目顯示，僅保留機種
             tableRowsHTML = rowsData.map(r => `
                 <tr>
                     <td style="padding:8px; border:1px solid #333;">${r[2] || '---'}</td>
