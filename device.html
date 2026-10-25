@@ -45,7 +45,6 @@
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
         .btn-qr { background: var(--primary); color: white; }
-        .btn-confirm { background: #17a2b8; color: white; }
         .btn-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 13px; border-radius: 4px; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -195,8 +194,8 @@
         <div class="card">
             <label>IDesign No.</label>
             <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                <input type="text" id="idesignNo" placeholder="輸入或掃描 IDesign No." style="margin-bottom: 0;" onkeydown="if(event.key==='Enter') submitIDesign();">
-                <button type="button" class="btn-confirm" style="white-space: nowrap; padding: 0 12px;" onclick="submitIDesign()">確認</button>
+                <!-- 改為一般手動輸入框，保留 QR 掃描快速輸入功能 -->
+                <input type="text" id="idesignNo" placeholder="請輸入 IDesign No." style="margin-bottom: 0;">
                 <button type="button" class="btn-qr" style="white-space: nowrap; padding: 0 12px;" onclick="startScanner()">掃描 QR</button>
             </div>
 
@@ -207,9 +206,8 @@
             <input type="text" id="testerName" placeholder="使用者姓名">
             
             <label>測試項目</label>
-            <select id="workItemSelect">
-                <option value="">-- 請選擇或帶入測試項目 --</option>
-            </select>
+            <!-- 改為一般手動輸入框 -->
+            <input type="text" id="workItemSelect" placeholder="請輸入測試項目">
 
             <label>開始時間</label>
             <input type="datetime-local" id="startTime">
@@ -281,62 +279,6 @@
         if (id) showTestPage(id);
     };
 
-    function submitIDesign() {
-        const val = document.getElementById('idesignNo').value;
-        if (!val) {
-            alert("請先輸入 IDesign No.");
-            return;
-        }
-        fetchIDesignData(val);
-    }
-
-    async function fetchIDesignData(requestID) {
-        if (!requestID) return;
-        
-        const targetUrl = `https://idesign.advantech.com/iDesignMVC3/RestAPI/RestAPIItemRecordListController/getItemRecordList?RequestID=${encodeURIComponent(requestID.trim())}`;
-        
-        try {
-            const res = await fetch(targetUrl);
-            
-            if (!res.ok) {
-                throw new Error(`HTTP 錯誤! 狀態碼: ${res.status}`);
-            }
-            
-            const data = await res.json();
-
-            if (Array.isArray(data) && data.length > 0) {
-                const firstItem = data[0];
-                
-                if (firstItem.ProductName) {
-                    document.getElementById('testModel').value = firstItem.ProductName;
-                }
-                
-                if (firstItem.Engineer) {
-                    const engineerName = firstItem.Engineer.split('@')[0];
-                    document.getElementById('testerName').value = engineerName;
-                }
-                
-                const workItems = [...new Set(data.map(item => item.WorkItem).filter(Boolean))];
-                const selectElem = document.getElementById('workItemSelect');
-                selectElem.innerHTML = '<option value="">-- 請選擇測試項目 --</option>';
-                
-                workItems.forEach(item => {
-                    const opt = document.createElement('option');
-                    opt.value = item;
-                    opt.textContent = item;
-                    selectElem.appendChild(opt);
-                });
-                if (workItems.length > 0) selectElem.selectedIndex = 1;
-
-            } else {
-                alert("未找到對應的 IDesign 資料");
-            }
-        } catch (e) {
-            console.error("Fetch IDesign API Error:", e);
-            alert("讀取 IDesign API 失敗！\n請確認已開啟 Allow CORS 擴充套件與 VPN。");
-        }
-    }
-
     function startScanner() {
         document.getElementById('scannerOverlay').classList.remove('hidden');
         if (!html5QrCode) {
@@ -348,7 +290,6 @@
             (decodedText) => {
                 document.getElementById('idesignNo').value = decodedText;
                 stopScanner();
-                fetchIDesignData(decodedText);
             },
             (errorMessage) => { }
         ).catch(err => {
@@ -447,12 +388,12 @@
                 document.getElementById('dropInputs').classList.remove('hidden');
                 document.getElementById('checkItems').classList.add('hidden');
                 document.getElementById('endTimeWrapper').classList.add('hidden');
-                document.getElementById('exportBtn').classList.remove('hidden'); // 顯示匯出按鈕
+                document.getElementById('exportBtn').classList.remove('hidden');
             } else {
                 document.getElementById('dropInputs').classList.add('hidden');
                 document.getElementById('checkItems').classList.remove('hidden');
                 document.getElementById('endTimeWrapper').classList.remove('hidden');
-                document.getElementById('exportBtn').classList.add('hidden'); // 隱藏匯出按鈕
+                document.getElementById('exportBtn').classList.add('hidden');
 
                 const items = CHECK_CONFIG[category] || [];
                 document.getElementById('normalChecks').innerHTML = items.map((t, i) => `
@@ -479,70 +420,67 @@
         }
     }
 
-    /* 匯出 Drop Data 為 PDF (對應 QAL-003-F03 表單格式) */
-    /* 匯出 Drop Data 為 PDF (透過畫面渲染，支援中文) */
     async function exportDropPDF() {
-    // 建立臨時隱藏容器以排版中文 PDF
-    const printArea = document.createElement('div');
-    printArea.style.padding = '20px';
-    printArea.style.background = '#fff';
-    printArea.style.width = '700px';
-    printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        const printArea = document.createElement('div');
+        printArea.style.padding = '20px';
+        printArea.style.background = '#fff';
+        printArea.style.width = '700px';
+        printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
 
-    const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
+        const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
 
-    printArea.innerHTML = `
-        <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表 (QAL-003-F03)</h2>
-        <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
-            <tr>
-                <td style="padding:6px; font-weight:bold;">設備名稱/ID:</td><td>${document.getElementById('displayDevName').innerText} (${document.getElementById('displayDevID').innerText})</td>
-                <td style="padding:6px; font-weight:bold;">IDesign No.:</td><td>${v('idesignNo')}</td>
-            </tr>
-            <tr>
-                <td style="padding:6px; font-weight:bold;">機種型號:</td><td>${v('testModel')}</td>
-                <td style="padding:6px; font-weight:bold;">測試人員:</td><td>${v('testerName')}</td>
-            </tr>
-            <tr>
-                <td style="padding:6px; font-weight:bold;">測試項目:</td><td>${v('workItemSelect')}</td>
-                <td style="padding:6px; font-weight:bold;">開始時間:</td><td>${v('startTime')}</td>
-            </tr>
-        </table>
+        printArea.innerHTML = `
+            <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表 (QAL-003-F03)</h2>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
+                <tr>
+                    <td style="padding:6px; font-weight:bold;">設備名稱/ID:</td><td>${document.getElementById('displayDevName').innerText} (${document.getElementById('displayDevID').innerText})</td>
+                    <td style="padding:6px; font-weight:bold;">IDesign No.:</td><td>${v('idesignNo')}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px; font-weight:bold;">機種型號:</td><td>${v('testModel')}</td>
+                    <td style="padding:6px; font-weight:bold;">測試人員:</td><td>${v('testerName')}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px; font-weight:bold;">測試項目:</td><td>${v('workItemSelect')}</td>
+                    <td style="padding:6px; font-weight:bold;">開始時間:</td><td>${v('startTime')}</td>
+                </tr>
+            </table>
+            
+            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">📦 尺寸/重量數據</h3>
+            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:20px;">
+                <tr style="background:#f2f2f2;"><th>項目</th><th>數值</th><th>項目</th><th>數值</th></tr>
+                <tr><td>Length (mm)</td><td>${v('dropL')}</td><td>Width (mm)</td><td>${v('dropW')}</td></tr>
+                <tr><td>Height (mm)</td><td>${v('dropH')}</td><td>Weight (kg)</td><td>${v('dropWeight')}</td></tr>
+                <tr><td>Drop Height (mm)</td><td>${v('dropHeight')}</td><td>-</td><td>-</td></tr>
+            </table>
+
+            <h3 style="border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
+            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px;">
+                <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
+                <tr><td>Corner</td><td>${v('g_corner')}</td><td>Short Edge</td><td>${v('g_short_e')}</td></tr>
+                <tr><td>Mid Edge</td><td>${v('g_mid_e')}</td><td>Long Edge</td><td>${v('g_long_e')}</td></tr>
+                <tr><td>Small Face</td><td>${v('g_small_f')}</td><td>Opposite Small Face</td><td>${v('g_opp_small_f')}</td></tr>
+                <tr><td>Mid Face</td><td>${v('g_mid_f')}</td><td>Opposite Mid Face</td><td>${v('g_opp_mid_f')}</td></tr>
+                <tr><td>Large Face</td><td>${v('g_large_f')}</td><td>Opposite Large Side</td><td>${v('g_opp_large_s')}</td></tr>
+            </table>
+        `;
+
+        document.body.appendChild(printArea);
+
+        const canvas = await html2canvas(printArea, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
         
-        <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">📦 尺寸/重量數據</h3>
-        <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:20px;">
-            <tr style="background:#f2f2f2;"><th>項目</th><th>數值</th><th>項目</th><th>數值</th></tr>
-            <tr><td>Length (mm)</td><td>${v('dropL')}</td><td>Width (mm)</td><td>${v('dropW')}</td></tr>
-            <tr><td>Height (mm)</td><td>${v('dropH')}</td><td>Weight (kg)</td><td>${v('dropWeight')}</td></tr>
-            <tr><td>Drop Height (mm)</td><td>${v('dropHeight')}</td><td>-</td><td>-</td></tr>
-        </table>
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-        <h3 style="border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
-        <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px;">
-            <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
-            <tr><td>Corner</td><td>${v('g_corner')}</td><td>Short Edge</td><td>${v('g_short_e')}</td></tr>
-            <tr><td>Mid Edge</td><td>${v('g_mid_e')}</td><td>Long Edge</td><td>${v('g_long_e')}</td></tr>
-            <tr><td>Small Face</td><td>${v('g_small_f')}</td><td>Opposite Small Face</td><td>${v('g_opp_small_f')}</td></tr>
-            <tr><td>Mid Face</td><td>${v('g_mid_f')}</td><td>Opposite Mid Face</td><td>${v('g_opp_mid_f')}</td></tr>
-            <tr><td>Large Face</td><td>${v('g_large_f')}</td><td>Opposite Large Side</td><td>${v('g_opp_large_s')}</td></tr>
-        </table>
-    `;
+        pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+        document.body.removeChild(printArea);
 
-    document.body.appendChild(printArea);
-
-    const canvas = await html2canvas(printArea, { scale: 2 });
-    const imgData = canvas.toDataURL('image/png');
-    
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-    document.body.removeChild(printArea);
-
-    pdf.save(`Drop_Test_Report_${v('idesignNo') || 'Record'}.pdf`);
-}
+        pdf.save(`Drop_Test_Report_${v('idesignNo') || 'Record'}.pdf`);
+    }
 
     async function fetchCloudLogs(id, cat) {
         const content = document.getElementById('logContent');
