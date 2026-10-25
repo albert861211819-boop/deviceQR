@@ -9,6 +9,7 @@
     <!-- 引入 PDF 匯出套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
@@ -479,69 +480,69 @@
     }
 
     /* 匯出 Drop Data 為 PDF (對應 QAL-003-F03 表單格式) */
-    function exportDropPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+    /* 匯出 Drop Data 為 PDF (透過畫面渲染，支援中文) */
+    async function exportDropPDF() {
+    // 建立臨時隱藏容器以排版中文 PDF
+    const printArea = document.createElement('div');
+    printArea.style.padding = '20px';
+    printArea.style.background = '#fff';
+    printArea.style.width = '700px';
+    printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
 
-        // 讀取頁面填寫之數值 (若空白則顯示空字串)
-        const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
+    const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
 
-        const devName = document.getElementById('displayDevName').innerText;
-        const devID = document.getElementById('displayDevID').innerText;
-        const idesignNo = v('idesignNo');
-        const model = v('testModel');
-        const user = v('testerName');
-        const workItem = v('workItemSelect');
-        const startTime = v('startTime');
+    printArea.innerHTML = `
+        <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表 (QAL-003-F03)</h2>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
+            <tr>
+                <td style="padding:6px; font-weight:bold;">設備名稱/ID:</td><td>${document.getElementById('displayDevName').innerText} (${document.getElementById('displayDevID').innerText})</td>
+                <td style="padding:6px; font-weight:bold;">IDesign No.:</td><td>${v('idesignNo')}</td>
+            </tr>
+            <tr>
+                <td style="padding:6px; font-weight:bold;">機種型號:</td><td>${v('testModel')}</td>
+                <td style="padding:6px; font-weight:bold;">測試人員:</td><td>${v('testerName')}</td>
+            </tr>
+            <tr>
+                <td style="padding:6px; font-weight:bold;">測試項目:</td><td>${v('workItemSelect')}</td>
+                <td style="padding:6px; font-weight:bold;">開始時間:</td><td>${v('startTime')}</td>
+            </tr>
+        </table>
+        
+        <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">📦 尺寸/重量數據</h3>
+        <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:20px;">
+            <tr style="background:#f2f2f2;"><th>項目</th><th>數值</th><th>項目</th><th>數值</th></tr>
+            <tr><td>Length (mm)</td><td>${v('dropL')}</td><td>Width (mm)</td><td>${v('dropW')}</td></tr>
+            <tr><td>Height (mm)</td><td>${v('dropH')}</td><td>Weight (kg)</td><td>${v('dropWeight')}</td></tr>
+            <tr><td>Drop Height (mm)</td><td>${v('dropHeight')}</td><td>-</td><td>-</td></tr>
+        </table>
 
-        // 標頭抬頭
-        doc.setFontSize(16);
-        doc.text("實驗室測試資料記錄表 (QAL-003-F03)", 105, 15, { align: "center" });
+        <h3 style="border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
+        <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px;">
+            <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
+            <tr><td>Corner</td><td>${v('g_corner')}</td><td>Short Edge</td><td>${v('g_short_e')}</td></tr>
+            <tr><td>Mid Edge</td><td>${v('g_mid_e')}</td><td>Long Edge</td><td>${v('g_long_e')}</td></tr>
+            <tr><td>Small Face</td><td>${v('g_small_f')}</td><td>Opposite Small Face</td><td>${v('g_opp_small_f')}</td></tr>
+            <tr><td>Mid Face</td><td>${v('g_mid_f')}</td><td>Opposite Mid Face</td><td>${v('g_opp_mid_f')}</td></tr>
+            <tr><td>Large Face</td><td>${v('g_large_f')}</td><td>Opposite Large Side</td><td>${v('g_opp_large_s')}</td></tr>
+        </table>
+    `;
 
-        doc.setFontSize(10);
-        doc.text(`設備名稱/ID: ${devName} (${devID})`, 14, 25);
-        doc.text(`IDesign No.: ${idesignNo}`, 14, 32);
-        doc.text(`機種型號: ${model}`, 110, 32);
-        doc.text(`測試人員: ${user}`, 14, 39);
-        doc.text(`測試項目: ${workItem}`, 110, 39);
-        doc.text(`開始時間: ${startTime}`, 14, 46);
+    document.body.appendChild(printArea);
 
-        // 基本尺寸/重量/落下高度
-        const dropBasicData = [
-            ["Length (mm)", v('dropL'), "Width (mm)", v('dropW')],
-            ["Height (mm)", v('dropH'), "Weight (kg)", v('dropWeight')],
-            ["Drop Height (mm)", v('dropHeight'), "-", "-"]
-        ];
+    const canvas = await html2canvas(printArea, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-        doc.autoTable({
-            startY: 52,
-            head: [["尺寸/重量項目", "數值", "尺寸/重量項目", "數值"]],
-            body: dropBasicData,
-            theme: 'grid',
-            styles: { fontSize: 9 }
-        });
+    pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+    document.body.removeChild(printArea);
 
-        // 加速規 (g) 數據
-        const gData = [
-            ["Corner", v('g_corner'), "Short Edge", v('g_short_e')],
-            ["Mid Edge", v('g_mid_e'), "Long Edge", v('g_long_e')],
-            ["Small Face", v('g_small_f'), "Opposite Small Face", v('g_opp_small_f')],
-            ["Mid Face", v('g_mid_f'), "Opposite Mid Face", v('g_opp_mid_f')],
-            ["Large Face", v('g_large_f'), "Opposite Large Side", v('g_opp_large_s')]
-        ];
-
-        doc.autoTable({
-            startY: doc.lastAutoTable.finalY + 8,
-            head: [["加速規衝擊方向", "g 值", "加速規衝擊方向", "g 值"]],
-            body: gData,
-            theme: 'grid',
-            styles: { fontSize: 9 }
-        });
-
-        // 下載檔名 (例：Drop_Test_Report_1123-017.pdf)
-        const fileName = `Drop_Test_Report_${idesignNo || 'Record'}.pdf`;
-        doc.save(fileName);
-    }
+    pdf.save(`Drop_Test_Report_${v('idesignNo') || 'Record'}.pdf`);
+}
 
     async function fetchCloudLogs(id, cat) {
         const content = document.getElementById('logContent');
