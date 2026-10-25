@@ -442,7 +442,7 @@
             <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
                 <tr>
                     <td style="padding:6px; font-weight:bold; width:18%;">設備名稱:</td><td style="width:32%;">${document.getElementById('displayDevName').innerText}</td>
-                    <td style="padding:6px; font-weight:bold; width:18%;">IDesign No.:</td><td style="width:32%;">${v('idesignNo')}</td>
+                    <td style="padding:6px; font-weight:bold; width:18%;">IDesign No:</td><td style="width:32%;">${v('idesignNo')}</td>
                 </tr>
                 <tr>
                     <td style="padding:6px; font-weight:bold;">機種型號:</td><td>${v('testModel')}</td>
@@ -454,7 +454,7 @@
                 </tr>
             </table>
             
-            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">📦 尺寸/重量數據</h3>
+            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">尺寸/重量數據</h3>
             <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:20px;">
                 <tr style="background:#f2f2f2;"><th>項目</th><th>數值</th><th>項目</th><th>數值</th></tr>
                 <tr><td>Length (mm)</td><td>${v('dropL')}</td><td>Width (mm)</td><td>${v('dropW')}</td></tr>
@@ -462,7 +462,7 @@
                 <tr><td>Drop Height (mm)</td><td>${v('dropHeight')}</td><td>-</td><td>-</td></tr>
             </table>
 
-            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
+            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">加速規 (g) 數據</h3>
             <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:25px;">
                 <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
                 <tr><td>Corner</td><td>${v('g_corner')}</td><td>Short Edge</td><td>${v('g_short_e')}</td></tr>
@@ -542,7 +542,7 @@
 
         printArea1.innerHTML = `
             <div style="border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px; text-align:center;">
-                <h2 style="margin:0;">${devName} ${currentMonthNum} 月使用紀錄表</h2>
+                <h2 style="margin:0;">${devName}   ${currentMonthNum} 月使用紀錄表</h2>
             </div>
             
             <table style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; border:1px solid #333; margin-bottom:20px;">
@@ -584,7 +584,7 @@
 
         const configItems = CHECK_CONFIG[category] || [];
         // 總共呈現點檢項目 + 最後一項「7. 檢查人簽名」
-        const allItems = [...configItems, "7. 檢查人簽名"];
+        const allItems = [...configItems, "檢查人簽名"];
 
         // 建立 1 到 31 日的表頭
         let dateHeaders = '';
