@@ -185,9 +185,13 @@
         <h2 id="displayDevName" style="margin-bottom: 5px;">載入中...</h2>
         
         <!-- ID 欄位列與右側「匯出」按鈕 -->
+        <!-- 原本只有按鈕，現在改為包含月份選擇器與按鈕的群組 -->
         <div class="id-row">
             <small id="displayDevID" style="color:#666; font-size:14px;"></small>
-            <button id="exportBtn" class="btn-export hidden" onclick="handleExportPDF()">匯出 PDF</button>
+            <div id="exportContainer" class="export-group hidden">
+                <input type="month" id="exportMonthInput" style="margin-bottom:0; width:auto; padding:6px; font-size:14px; height:38px;">
+                <button id="exportBtn" class="btn-export" onclick="handleExportPDF()">匯出 PDF</button>
+            </div>
         </div>
         
         <div class="card">
@@ -274,6 +278,11 @@
         }
         const id = params.get('id');
         if (id) showTestPage(id);
+        // 【新增此段】初始化月份選擇器預設為當月 (YYYY-MM)
+        const now = new Date();
+        const defaultYearMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        const monthInput = document.getElementById('exportMonthInput');
+        if (monthInput) monthInput.value = defaultYearMonth;
     };
 
     function startScanner() {
@@ -494,6 +503,20 @@
     async function exportChamberPDF() {
         const devName = document.getElementById('displayDevName').innerText;
         const category = window.currentCategory;
+        // 【新增此段】讀取使用者選擇的月份 (格式為 YYYY-MM)
+        const selectedMonthVal = document.getElementById('exportMonthInput').value;
+        let exportYear, exportMonthNum, currentMonthFilter;
+        if (selectedMonthVal) {
+            const parts = selectedMonthVal.split('-');
+            exportYear = parseInt(parts[0], 10);
+            exportMonthNum = parseInt(parts[1], 10);
+            currentMonthFilter = selectedMonthVal;
+        } else {
+            const now = new Date();
+            exportYear = now.getFullYear();
+            exportMonthNum = now.getMonth() + 1;
+            currentMonthFilter = `${exportYear}-${exportMonthNum.toString().padStart(2, '0')}`;
+        }
         const now = new Date();
         const currentMonthNum = now.getMonth() + 1;
         const currentYear = now.getFullYear();
