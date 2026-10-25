@@ -6,7 +6,6 @@
     <title>雲端同步設備管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- 引入 PDF 匯出套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -382,7 +381,6 @@
             window.currentCategory = category;
             document.getElementById('displayDevName').innerText = dev[1];
             
-            // 所有類別頁面皆顯示匯出 PDF 按鈕
             document.getElementById('exportBtn').classList.remove('hidden');
 
             if (category === "Drop tester") {
@@ -419,7 +417,6 @@
         }
     }
 
-    /* 判斷並執行匯出 PDF */
     function handleExportPDF() {
         if (window.currentCategory === "Drop tester") {
             exportDropPDF();
@@ -428,7 +425,6 @@
         }
     }
 
-    /* 匯出 Drop Data PDF */
     async function exportDropPDF() {
         const printArea = document.createElement('div');
         printArea.style.padding = '20px';
@@ -490,19 +486,16 @@
         pdf.save(`Drop_Test_Report_${v('idesignNo') || 'Record'}.pdf`);
     }
 
-    /* 匯出 Chamber 使用記錄表 PDF (對應 QAL-006-F04 RE A0 格式) */
     async function exportChamberPDF() {
-        const cat = window.currentCategory;
         const devName = document.getElementById('displayDevName').innerText;
         const devID = document.getElementById('displayDevID').innerText.replace("ID: ", "");
         const now = new Date();
-        const monthStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月`;
-        const currentMonthFilter = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        const currentMonthNum = now.getMonth() + 1;
+        const currentMonthFilter = `${now.getFullYear()}-${currentMonthNum.toString().padStart(2, '0')}`;
 
-        // 向 GAS 抓取本月份所有紀錄
         let rowsData = [];
         try {
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(cat)}`);
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(window.currentCategory)}`);
             const data = await res.json();
             rowsData = data.slice(1).filter(r => {
                 if (!r[6]) return false;
@@ -521,15 +514,15 @@
 
         const rawFormat = (val) => val ? val.toString().replace('T', ' ').substring(0, 16) : '';
 
-        // 生成本月數據列
         let tableRowsHTML = '';
         if (rowsData.length === 0) {
-            tableRowsHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
+            tableRowsHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
         } else {
+            // 已移除測試機種欄位中的測試項目顯示，僅保留機種
             tableRowsHTML = rowsData.map(r => `
                 <tr>
                     <td style="padding:8px; border:1px solid #333;">${r[2] || '---'}</td>
-                    <td style="padding:8px; border:1px solid #333;">${r[4] || '---'} ${r[3] ? '(' + r[3] + ')' : ''}</td>
+                    <td style="padding:8px; border:1px solid #333;">${r[4] || '---'}</td>
                     <td style="padding:8px; border:1px solid #333;">${rawFormat(r[6])}</td>
                     <td style="padding:8px; border:1px solid #333;">${rawFormat(r[7]) || '進行中'}</td>
                     <td style="padding:8px; border:1px solid #333;">${r[5] || '---'}</td>
@@ -538,23 +531,18 @@
         }
 
         printArea.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px;">
-                <h2 style="margin:0;">Chamber 使用紀錄表 (QAL-006-F04 RE A0)</h2>
-                <span style="font-size:14px; color:#666;">表單編號：QAL-006-F04 RE A0</span>
-            </div>
-            <div style="font-size:14px; margin-bottom:12px; display:flex; justify-content:space-between;">
-                <span><strong>設備名稱：</strong>${devName} (ID: ${devID})</span>
-                <span><strong>紀錄月份：</strong>${monthStr}</span>
+            <div style="border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px; text-align:center;">
+                <h2 style="margin:0;">${devName} ${currentMonthNum} 月使用紀錄表</h2>
             </div>
             
             <table style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; border:1px solid #333; margin-bottom:20px;">
                 <thead>
                     <tr style="background:#e9ecef;">
-                        <th style="padding:8px; border:1px solid #333; width:18%;">IDesign No.</th>
-                        <th style="padding:8px; border:1px solid #333; width:27%;">測試機種 / 項目</th>
+                        <th style="padding:8px; border:1px solid #333; width:20%;">IDesign No.</th>
+                        <th style="padding:8px; border:1px solid #333; width:28%;">測試機種</th>
                         <th style="padding:8px; border:1px solid #333; width:22%;">啟始時間</th>
                         <th style="padding:8px; border:1px solid #333; width:22%;">結束時間</th>
-                        <th style="padding:8px; border:1px solid #333; width:11%;">使用者</th>
+                        <th style="padding:8px; border:1px solid #333; width:12%;">使用者</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -578,7 +566,7 @@
         pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
         document.body.removeChild(printArea);
 
-        pdf.save(`${devName}_${monthStr.replace(/\s+/g, '')}_使用紀錄表.pdf`);
+        pdf.save(`${devName}_${currentMonthNum}月使用紀錄表.pdf`);
     }
 
     async function fetchCloudLogs(id, cat) {
