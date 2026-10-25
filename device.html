@@ -604,9 +604,12 @@
                     if (r[6]) {
                         const rDate = new Date(r[6]);
                         if (rDate.getFullYear() === currentYear && (rDate.getMonth() + 1) === currentMonthNum && rDate.getDate() === d) {
-                            // 如果該筆紀錄的該項目為正常，則顯示 V
-                            // r[9] 或後續欄位假設儲存 checks 陣列，直接簡化判斷只要當日有紀錄且狀態正常就顯示 "V"
-                            hasCheck = "V";
+                            const checkStatus = r[9 + index];
+                            if (checkStatus === "異常") {
+                                cellMark = "X";
+                            } else if (checkStatus === "正常" || !cellMark) {
+                                cellMark = "V";
+                            }
                         }
                     }
                 });
