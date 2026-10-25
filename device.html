@@ -185,7 +185,7 @@
         <h2 id="displayDevName" style="margin-bottom: 5px;">載入中...</h2>
         
         <!-- ID 欄位列與右側「匯出」按鈕 -->
-        <!-- 原本只有按鈕，現在改為包含月份選擇器與按鈕的群組 -->
+       <!-- ID 欄位與月份選擇器、匯出按鈕 -->
         <div class="id-row">
             <small id="displayDevID" style="color:#666; font-size:14px;"></small>
             <div id="exportContainer" class="export-group hidden">
@@ -278,7 +278,8 @@
         }
         const id = params.get('id');
         if (id) showTestPage(id);
-        // 【新增此段】初始化月份選擇器預設為當月 (YYYY-MM)
+
+        // 初始化月份選擇器預設為當月 (YYYY-MM)
         const now = new Date();
         const defaultYearMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
         const monthInput = document.getElementById('exportMonthInput');
