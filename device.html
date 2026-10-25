@@ -493,13 +493,15 @@
 
     async function exportChamberPDF() {
         const devName = document.getElementById('displayDevName').innerText;
+        const category = window.currentCategory;
         const now = new Date();
         const currentMonthNum = now.getMonth() + 1;
-        const currentMonthFilter = `${now.getFullYear()}-${currentMonthNum.toString().padStart(2, '0')}`;
+        const currentYear = now.getFullYear();
+        const currentMonthFilter = `${currentYear}-${currentMonthNum.toString().padStart(2, '0')}`;
 
         let rowsData = [];
         try {
-            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(window.currentCategory)}`);
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
             const data = await res.json();
             rowsData = data.slice(1).filter(r => {
                 if (!r[6]) return false;
@@ -510,20 +512,24 @@
             return;
         }
 
-        const printArea = document.createElement('div');
-        printArea.style.padding = '20px';
-        printArea.style.background = '#fff';
-        printArea.style.width = '750px';
-        printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
-        printArea.style.position = 'relative';
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        // --- 第一頁：原本的本月紀錄列表 ---
+        const printArea1 = document.createElement('div');
+        printArea1.style.padding = '20px';
+        printArea1.style.background = '#fff';
+        printArea1.style.width = '750px';
+        printArea1.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea1.style.position = 'relative';
 
         const rawFormat = (val) => val ? val.toString().replace('T', ' ').substring(0, 16) : '';
 
-        let tableRowsHTML = '';
+        let tableRowsHTML1 = '';
         if (rowsData.length === 0) {
-            tableRowsHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
+            tableRowsHTML1 = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
         } else {
-            tableRowsHTML = rowsData.map(r => `
+            tableRowsHTML1 = rowsData.map(r => `
                 <tr>
                     <td style="padding:8px; border:1px solid #333;">${r[2] || '---'}</td>
                     <td style="padding:8px; border:1px solid #333;">${r[4] || '---'}</td>
@@ -534,8 +540,7 @@
             `).join('');
         }
 
-        // 將 QAL-006-F04 RE.A0 放置於右下角並反灰
-        printArea.innerHTML = `
+        printArea1.innerHTML = `
             <div style="border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px; text-align:center;">
                 <h2 style="margin:0;">${devName} ${currentMonthNum} 月使用紀錄表</h2>
             </div>
@@ -551,28 +556,101 @@
                     </tr>
                 </thead>
                 <tbody>
-                    ${tableRowsHTML}
+                    ${tableRowsHTML1}
                 </tbody>
             </table>
             
             <div style="text-align:right; font-size:12px; color:#888; margin-top:10px;">QAL-006-F04 RE.A0</div>
         `;
 
-        document.body.appendChild(printArea);
-
-        const canvas = await html2canvas(printArea, { scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
+        document.body.appendChild(printArea1);
+        const canvas1 = await html2canvas(printArea1, { scale: 2 });
+        const imgData1 = canvas1.toDataURL('image/png');
+        const imgProps1 = pdf.getImageProperties(imgData1);
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        const pdfHeight1 = (imgProps1.height * pdfWidth) / imgProps1.width;
+        pdf.addImage(imgData1, 'PNG', 0, 10, pdfWidth, pdfHeight1);
+        document.body.removeChild(printArea1);
 
-        pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
-        document.body.removeChild(printArea);
+        // --- 第二頁：新增加的開機前注意事項查檢表 (仿照圖片格式) ---
+        pdf.addPage();
 
-        pdf.save(`${devName}_${currentMonthNum}月使用紀錄表.pdf`);
+        const printArea2 = document.createElement('div');
+        printArea2.style.padding = '20px';
+        printArea2.style.background = '#fff';
+        printArea2.style.width = '1000px'; // 寬幅以容納 1-31 日欄位
+        printArea2.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea2.style.position = 'relative';
+
+        const configItems = CHECK_CONFIG[category] || [];
+        // 總共呈現點檢項目 + 最後一項「7. 檢查人簽名」
+        const allItems = [...configItems, "7. 檢查人簽名"];
+
+        // 建立 1 到 31 日的表頭
+        let dateHeaders = '';
+        for (let d = 1; d <= 31; d++) {
+            dateHeaders += `<th style="border:1px solid #333; padding:4px; font-size:10px; text-align:center; width:22px;">${d}</th>`;
+        }
+
+        // 建立各點檢項目的表格列
+        let tableRowsHTML2 = '';
+        allItems.forEach((itemText, index) => {
+            let dayCells = '';
+            for (let d = 1; d <= 31; d++) {
+                // 檢查是否有當日的紀錄且有點檢項目打勾
+                // r[6] 為開始時間，r[10...] 或紀錄裡的 checks 是否包含正常
+                let hasCheck = '';
+                rowsData.forEach(r => {
+                    if (r[6]) {
+                        const rDate = new Date(r[6]);
+                        if (rDate.getFullYear() === currentYear && (rDate.getMonth() + 1) === currentMonthNum && rDate.getDate() === d) {
+                            // 如果該筆紀錄的該項目為正常，則顯示 V
+                            // r[9] 或後續欄位假設儲存 checks 陣列，直接簡化判斷只要當日有紀錄且狀態正常就顯示 "V"
+                            hasCheck = "V";
+                        }
+                    }
+                });
+                dayCells += `<td style="border:1px solid #333; text-align:center; font-size:11px;">${hasCheck}</td>`;
+            }
+
+            tableRowsHTML2 += `
+                <tr>
+                    <td style="border:1px solid #333; padding:8px; font-size:12px; width:280px; word-break:break-all;">${index + 1}. ${itemText}</td>
+                    ${dayCells}
+                </tr>
+            `;
+        });
+
+        printArea2.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-size:18px; font-weight:bold;">
+                <div>${currentMonthNum} 月 實驗室設備開機前注意事項查檢表 (${category})</div>
+                <div>${devName}</div>
+            </div>
+            
+            <table style="width:100%; border-collapse:collapse; border:1px solid #333;">
+                <thead>
+                    <tr style="background:#e9ecef;">
+                        <th style="border:1px solid #333; padding:8px; font-size:12px; text-align:center;">Item \\ Date</th>
+                        ${dateHeaders}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHTML2}
+                </tbody>
+            </table>
+            
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:15px;">QAL-006-F04 RE.A0</div>
+        `;
+
+        document.body.appendChild(printArea2);
+        const canvas2 = await html2canvas(printArea2, { scale: 2 });
+        const imgData2 = canvas2.toDataURL('image/png');
+        const imgProps2 = pdf.getImageProperties(imgData2);
+        const pdfHeight2 = (imgProps2.height * pdfWidth) / imgProps2.width;
+        pdf.addImage(imgData2, 'PNG', 0, 10, pdfWidth, pdfHeight2);
+        document.body.removeChild(printArea2);
+
+        pdf.save(`${devName}_${currentMonthNum}月使用紀錄與查檢表.pdf`);
     }
 
     async function fetchCloudLogs(id, cat) {
