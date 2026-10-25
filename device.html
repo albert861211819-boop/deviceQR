@@ -6,6 +6,10 @@
     <title>雲端同步設備管理系統</title>
     <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- 引入 PDF 匯出套件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
@@ -41,7 +45,7 @@
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
         .btn-qr { background: var(--primary); color: white; }
         .btn-confirm { background: #17a2b8; color: white; }
-        .btn-edit { background: #ffc107; color: #212529; }
+        .btn-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 13px; border-radius: 4px; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
@@ -130,6 +134,13 @@
 
         .scanner-container { width: 300px; background: white; padding: 15px; border-radius: 12px; text-align: center; }
         #reader { width: 100%; }
+        
+        .id-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
     </style> 
 </head>
 <body>
@@ -173,7 +184,12 @@
 
     <div id="testView" class="hidden">
         <h2 id="displayDevName" style="margin-bottom: 5px;">載入中...</h2>
-        <small id="displayDevID" style="color:#666; font-size:14px; display:block; margin-bottom:15px;"></small>
+        
+        <!-- ID 欄位列與右側「匯出」按鈕 -->
+        <div class="id-row">
+            <small id="displayDevID" style="color:#666; font-size:14px;"></small>
+            <button id="exportBtn" class="btn-export hidden" onclick="exportDropPDF()">匯出 PDF</button>
+        </div>
         
         <div class="card">
             <label>IDesign No.</label>
@@ -213,7 +229,7 @@
                 <input type="number" id="dropW" placeholder="Width (mm)">
                 <input type="number" id="dropH" placeholder="Height (mm)">
                 <input type="number" id="dropWeight" placeholder="Weight (kg)">
-                <input type="number" id="dropHeight" placeholder="Drop height (cm)">
+                <input type="number" id="dropHeight" placeholder="Drop height (mm)">
 
                 <button type="button" class="collapsible" onclick="toggleCollapsible(this)">加速規數值錄入 (g)</button>
                 <div class="content">
@@ -223,11 +239,11 @@
                         <input type="number" id="g_mid_e" placeholder="Mid edge">
                         <input type="number" id="g_long_e" placeholder="Long edge">
                         <input type="number" id="g_small_f" placeholder="Small face">
-                        <input type="number" id="g_opp_small_f" placeholder="Opposite small f.">
+                        <input type="number" id="g_opp_small_f" placeholder="Oppsite small f.">
                         <input type="number" id="g_mid_f" placeholder="Mid face">
-                        <input type="number" id="g_opp_mid_f" placeholder="Opposite mid f.">
+                        <input type="number" id="g_opp_mid_f" placeholder="Oppsite mid f.">
                         <input type="number" id="g_large_f" placeholder="Large face">
-                        <input type="number" id="g_opp_large_s" placeholder="Opposite large f.">      
+                        <input type="number" id="g_opp_large_s" placeholder="Oppsite large s.">      
                     </div>
                 </div>             
             </div>
@@ -243,7 +259,7 @@
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwMMiVfTN5wy4PLpjZS9N-QHx9idgFK9UZeo_wROUxYt0Rt36cmOweClWedTdr7jyg/exec";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcHjQWcfU401VUA9G9FT-hbIoY30LMFb2qQGvxOxk_JLAvI-PD9BdvsC0V3fk8kd0/exec";
     const ADMIN_PASSWORD = "admin";
     const CHECK_CONFIG = {
         "General chamber": ["電源是否正常？(Input V ± 10%)", "水槽及水位器，水位是否正常？", "感濕棉布是否潔淨，吸水性是否良好？", "溼度保護器是否設定於 130℃~150℃ 間？", "蒸餾水是否足夠？", "環境溫溼度是否合乎規定？"],
@@ -430,10 +446,12 @@
                 document.getElementById('dropInputs').classList.remove('hidden');
                 document.getElementById('checkItems').classList.add('hidden');
                 document.getElementById('endTimeWrapper').classList.add('hidden');
+                document.getElementById('exportBtn').classList.remove('hidden'); // 顯示匯出按鈕
             } else {
                 document.getElementById('dropInputs').classList.add('hidden');
                 document.getElementById('checkItems').classList.remove('hidden');
                 document.getElementById('endTimeWrapper').classList.remove('hidden');
+                document.getElementById('exportBtn').classList.add('hidden'); // 隱藏匯出按鈕
 
                 const items = CHECK_CONFIG[category] || [];
                 document.getElementById('normalChecks').innerHTML = items.map((t, i) => `
@@ -443,7 +461,6 @@
                         <label><input type="radio" name="q${i}" value="異常"> 異常</label>
                     </div></div>`).join('');
                 
-                // 檢查未完成紀錄 (配合 Excel 欄位右移調整 Index)
                 const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
                 const logs = await resLogs.json();
                 const unfinished = logs.slice(1).reverse().find(r => r[0].toString() === id.toString() && !r[7] && r[8] === getPhoneID());
@@ -461,6 +478,71 @@
         }
     }
 
+    /* 匯出 Drop Data 為 PDF (對應 QAL-003-F03 表單格式) */
+    function exportDropPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // 讀取頁面填寫之數值 (若空白則顯示空字串)
+        const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
+
+        const devName = document.getElementById('displayDevName').innerText;
+        const devID = document.getElementById('displayDevID').innerText;
+        const idesignNo = v('idesignNo');
+        const model = v('testModel');
+        const user = v('testerName');
+        const workItem = v('workItemSelect');
+        const startTime = v('startTime');
+
+        // 標頭抬頭
+        doc.setFontSize(16);
+        doc.text("實驗室測試資料記錄表 (QAL-003-F03)", 105, 15, { align: "center" });
+
+        doc.setFontSize(10);
+        doc.text(`設備名稱/ID: ${devName} (${devID})`, 14, 25);
+        doc.text(`IDesign No.: ${idesignNo}`, 14, 32);
+        doc.text(`機種型號: ${model}`, 110, 32);
+        doc.text(`測試人員: ${user}`, 14, 39);
+        doc.text(`測試項目: ${workItem}`, 110, 39);
+        doc.text(`開始時間: ${startTime}`, 14, 46);
+
+        // 基本尺寸/重量/落下高度
+        const dropBasicData = [
+            ["Length (mm)", v('dropL'), "Width (mm)", v('dropW')],
+            ["Height (mm)", v('dropH'), "Weight (kg)", v('dropWeight')],
+            ["Drop Height (mm)", v('dropHeight'), "-", "-"]
+        ];
+
+        doc.autoTable({
+            startY: 52,
+            head: [["尺寸/重量項目", "數值", "尺寸/重量項目", "數值"]],
+            body: dropBasicData,
+            theme: 'grid',
+            styles: { fontSize: 9 }
+        });
+
+        // 加速規 (g) 數據
+        const gData = [
+            ["Corner", v('g_corner'), "Short Edge", v('g_short_e')],
+            ["Mid Edge", v('g_mid_e'), "Long Edge", v('g_long_e')],
+            ["Small Face", v('g_small_f'), "Opposite Small Face", v('g_opp_small_f')],
+            ["Mid Face", v('g_mid_f'), "Opposite Mid Face", v('g_opp_mid_f')],
+            ["Large Face", v('g_large_f'), "Opposite Large Side", v('g_opp_large_s')]
+        ];
+
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 8,
+            head: [["加速規衝擊方向", "g 值", "加速規衝擊方向", "g 值"]],
+            body: gData,
+            theme: 'grid',
+            styles: { fontSize: 9 }
+        });
+
+        // 下載檔名 (例：Drop_Test_Report_1123-017.pdf)
+        const fileName = `Drop_Test_Report_${idesignNo || 'Record'}.pdf`;
+        doc.save(fileName);
+    }
+
     async function fetchCloudLogs(id, cat) {
         const content = document.getElementById('logContent');
         try {
@@ -470,7 +552,6 @@
             const now = new Date();
             const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-            // 配合 Excel 欄位順序：G 欄 (index 6) 為開始時間
             const rows = data.slice(1).filter(r => {
                 if (!r[6]) return false;
                 return r[0].toString() === id.toString() && r[6].toString().startsWith(currentMonthStr);
