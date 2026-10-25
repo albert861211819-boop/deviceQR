@@ -606,9 +606,9 @@
                         if (rDate.getFullYear() === currentYear && (rDate.getMonth() + 1) === currentMonthNum && rDate.getDate() === d) {
                             const checkStatus = r[9 + index];
                             if (checkStatus === "異常") {
-                                cellMark = "X";
+                                hasCheck = "X";
                             } else if (checkStatus === "正常" || !cellMark) {
-                                cellMark = "V";
+                                hasCheck = "V";
                             }
                         }
                     }
