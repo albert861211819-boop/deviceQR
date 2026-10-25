@@ -44,7 +44,7 @@
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
         .btn-qr { background: var(--primary); color: white; }
-        .btn-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 13px; border-radius: 4px; }
+        .btn-export { background: #6f42c1; color: white; padding: 6px 12px; font-size: 13px; border-radius: 4px; height: 38px; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
@@ -139,6 +139,12 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            gap: 10px;
+        }
+        .export-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
         }
     </style> 
 </head>
@@ -184,8 +190,7 @@
     <div id="testView" class="hidden">
         <h2 id="displayDevName" style="margin-bottom: 5px;">載入中...</h2>
         
-        <!-- ID 欄位列與右側「匯出」按鈕 -->
-       <!-- ID 欄位與月份選擇器、匯出按鈕 -->
+        <!-- ID 欄位與月份選擇器、匯出按鈕 -->
         <div class="id-row">
             <small id="displayDevID" style="color:#666; font-size:14px;"></small>
             <div id="exportContainer" class="export-group hidden">
@@ -391,7 +396,7 @@
             window.currentCategory = category;
             document.getElementById('displayDevName').innerText = dev[1];
             
-            document.getElementById('exportBtn').classList.remove('hidden');
+            document.getElementById('exportContainer').classList.remove('hidden');
 
             if (category === "Drop tester") {
                 document.getElementById('dropInputs').classList.remove('hidden');
@@ -412,7 +417,15 @@
                 
                 const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
                 const logs = await resLogs.json();
-                const unfinished = logs.slice(1).reverse().find(r => r[0].toString() === id.toString() && !r[7] && r[8] === getPhoneID());
+                
+                const todayStr = new Date().toISOString().split('T')[0];
+                const unfinished = logs.slice(1).reverse().find(r => {
+                    if (r[0].toString() === id.toString() && !r[7] && r[8] === getPhoneID() && r[6]) {
+                        return r[6].toString().startsWith(todayStr);
+                    }
+                    return false;
+                });
+
                 if (unfinished) {
                     document.getElementById('idesignNo').value = unfinished[2] || '';
                     document.getElementById('workItemSelect').value = unfinished[3] || '';
@@ -504,7 +517,8 @@
     async function exportChamberPDF() {
         const devName = document.getElementById('displayDevName').innerText;
         const category = window.currentCategory;
-        // 【新增此段】讀取使用者選擇的月份 (格式為 YYYY-MM)
+        
+        // 讀取使用者選擇的月份 (格式為 YYYY-MM)
         const selectedMonthVal = document.getElementById('exportMonthInput').value;
         let exportYear, exportMonthNum, currentMonthFilter;
         if (selectedMonthVal) {
@@ -518,10 +532,6 @@
             exportMonthNum = now.getMonth() + 1;
             currentMonthFilter = `${exportYear}-${exportMonthNum.toString().padStart(2, '0')}`;
         }
-        const now = new Date();
-        const currentMonthNum = now.getMonth() + 1;
-        const currentYear = now.getFullYear();
-        const currentMonthFilter = `${currentYear}-${currentMonthNum.toString().padStart(2, '0')}`;
 
         let rowsData = [];
         try {
@@ -532,7 +542,7 @@
                 return r[0].toString() === document.getElementById('displayDevID').innerText.replace("ID: ", "").toString() && r[6].toString().startsWith(currentMonthFilter);
             });
         } catch (e) {
-            alert("載入本月資料失敗，無法產生 PDF");
+            alert("載入指定月份資料失敗，無法產生 PDF");
             return;
         }
 
@@ -551,7 +561,7 @@
 
         let tableRowsHTML1 = '';
         if (rowsData.length === 0) {
-            tableRowsHTML1 = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">本月份尚無使用紀錄</td></tr>`;
+            tableRowsHTML1 = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">選擇的月份尚無使用紀錄</td></tr>`;
         } else {
             tableRowsHTML1 = rowsData.map(r => `
                 <tr>
@@ -566,7 +576,7 @@
 
         printArea1.innerHTML = `
             <div style="border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px; text-align:center;">
-                <h2 style="margin:0;">${devName}   ${currentMonthNum} 月使用紀錄表</h2>
+                <h2 style="margin:0;">${devName}   ${exportMonthNum} 月使用紀錄表 (${exportYear})</h2>
             </div>
             
             <table style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; border:1px solid #333; margin-bottom:20px;">
@@ -607,7 +617,7 @@
         printArea2.style.position = 'relative';
 
         const configItems = CHECK_CONFIG[category] || [];
-        // 總共呈現點檢項目 + 最後一項「7. 檢查人簽名」
+        // 總共呈現點檢項目 + 最後一項「檢查人簽名」
         const allItems = [...configItems, "檢查人簽名"];
 
         // 建立 1 到 31 日的表頭
@@ -621,13 +631,11 @@
         allItems.forEach((itemText, index) => {
             let dayCells = '';
             for (let d = 1; d <= 31; d++) {
-                // 檢查是否有當日的紀錄且有點檢項目打勾
-                // r[6] 為開始時間，r[10...] 或紀錄裡的 checks 是否包含正常
                 let hasCheck = '';
                 rowsData.forEach(r => {
                     if (r[6]) {
                         const rDate = new Date(r[6]);
-                        if (rDate.getFullYear() === currentYear && (rDate.getMonth() + 1) === currentMonthNum && rDate.getDate() === d) {
+                        if (rDate.getFullYear() === exportYear && (rDate.getMonth() + 1) === exportMonthNum && rDate.getDate() === d) {
                             const checkStatus = r[9 + index];
                             if (checkStatus === "異常") {
                                 hasCheck = "X";
@@ -637,7 +645,7 @@
                         }
                     }
                 });
-                dayCells += `<td style="border:1px solid #333; text-align:center; font-size:11px;">${hasCheck}</td>`;
+                dayCells += `<td style="border:1px solid #333; text-align:center; font-size:12px; height:28px; font-weight:bold; color:${hasCheck === 'X' ? 'red' : '#333'};">${hasCheck}</td>`;
             }
 
             tableRowsHTML2 += `
@@ -650,7 +658,7 @@
 
         printArea2.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-size:18px; font-weight:bold;">
-                <div>${currentMonthNum} 月 實驗室設備開機前注意事項查檢表 (${category})</div>
+                <div>${exportMonthNum} 月 實驗室設備開機前注意事項查檢表 (${category})</div>
                 <div>${devName}</div>
             </div>
             
@@ -677,7 +685,7 @@
         pdf.addImage(imgData2, 'PNG', 0, 10, pdfWidth, pdfHeight2);
         document.body.removeChild(printArea2);
 
-        pdf.save(`${devName}_${currentMonthNum}月使用紀錄與查檢表.pdf`);
+        pdf.save(`${devName}_${exportYear}年${exportMonthNum}月使用紀錄與查檢表.pdf`);
     }
 
     async function fetchCloudLogs(id, cat) {
