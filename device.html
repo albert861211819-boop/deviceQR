@@ -434,12 +434,9 @@
         printArea.style.position = 'relative';
 
         const v = (id) => document.getElementById(id) ? document.getElementById(id).value : '';
-
-        // 開始時間只擷取年月日 (YYYY-MM-DD)
         const rawStart = v('startTime');
         const startDateOnly = rawStart ? rawStart.split('T')[0] : '';
 
-        // 移除了 ID，並將 QAL-003-F03 放到右下角反灰
         printArea.innerHTML = `
             <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表</h2>
             <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
@@ -465,7 +462,7 @@
                 <tr><td>Drop Height (mm)</td><td>${v('dropHeight')}</td><td>-</td><td>-</td></tr>
             </table>
 
-            <h3 style="border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
+            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">⚡ 加速規 (g) 數據</h3>
             <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:25px;">
                 <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
                 <tr><td>Corner</td><td>${v('g_corner')}</td><td>Short Edge</td><td>${v('g_short_e')}</td></tr>
@@ -475,7 +472,6 @@
                 <tr><td>Large Face</td><td>${v('g_large_f')}</td><td>Opposite Large Side</td><td>${v('g_opp_large_s')}</td></tr>
             </table>
 
-            <!-- 表單編號置於右下角並反灰 -->
             <div style="text-align:right; font-size:12px; color:#888; margin-top:10px;">QAL-003-F03</div>
         `;
 
@@ -497,7 +493,6 @@
 
     async function exportChamberPDF() {
         const devName = document.getElementById('displayDevName').innerText;
-        const devID = document.getElementById('displayDevID').innerText.replace("ID: ", "");
         const now = new Date();
         const currentMonthNum = now.getMonth() + 1;
         const currentMonthFilter = `${now.getFullYear()}-${currentMonthNum.toString().padStart(2, '0')}`;
@@ -508,7 +503,7 @@
             const data = await res.json();
             rowsData = data.slice(1).filter(r => {
                 if (!r[6]) return false;
-                return r[0].toString() === devID.toString() && r[6].toString().startsWith(currentMonthFilter);
+                return r[0].toString() === document.getElementById('displayDevID').innerText.replace("ID: ", "").toString() && r[6].toString().startsWith(currentMonthFilter);
             });
         } catch (e) {
             alert("載入本月資料失敗，無法產生 PDF");
@@ -520,6 +515,7 @@
         printArea.style.background = '#fff';
         printArea.style.width = '750px';
         printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea.style.position = 'relative';
 
         const rawFormat = (val) => val ? val.toString().replace('T', ' ').substring(0, 16) : '';
 
@@ -538,6 +534,7 @@
             `).join('');
         }
 
+        // 將 QAL-006-F04 RE.A0 放置於右下角並反灰
         printArea.innerHTML = `
             <div style="border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px; text-align:center;">
                 <h2 style="margin:0;">${devName} ${currentMonthNum} 月使用紀錄表</h2>
@@ -557,7 +554,8 @@
                     ${tableRowsHTML}
                 </tbody>
             </table>
-            <div style="font-size:12px; color:#666; text-align:right;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+            
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:10px;">QAL-006-F04 RE.A0</div>
         `;
 
         document.body.appendChild(printArea);
