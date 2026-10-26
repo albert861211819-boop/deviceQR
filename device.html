@@ -694,7 +694,9 @@
         printArea2.style.position = 'relative';
 
         const configItems = CHECK_CONFIG[category] || [];
-        const allItems = [...configItems, "檢查人簽名"];
+        const baseChecks = [...configItems];
+        while (baseChecks.length < 6) { baseChecks.push(""); }
+        const allItems = [...baseChecks.slice(0, 6), "使用者姓名"];
 
         let dateHeaders = '';
         for (let d = 1; d <= 31; d++) {
@@ -710,16 +712,21 @@
                     if (r[6]) {
                         const rDate = new Date(r[6]);
                         if (rDate.getFullYear() === exportYear && (rDate.getMonth() + 1) === exportMonthNum && rDate.getDate() === d) {
-                            const checkStatus = r[9 + index];
-                            if (checkStatus === "異常") {
-                                hasCheck = "X";
-                            } else if (checkStatus === "正常" || !hasCheck) {
-                                hasCheck = "V";
+                            if (index === 6) {
+                                hasCheck = r[5] || '';
+                            } else {
+                                const checkStatus = r[9 + index];
+                                if (checkStatus === "異常") {
+                                    hasCheck = "X";
+                                } else if (checkStatus === "正常" || !hasCheck) {
+                                    hasCheck = "V";
+                                }
                             }
                         }
                     }
                 });
-                dayCells += `<td style="border:1px solid #333; text-align:center; font-size:12px; height:28px; font-weight:bold; color:${hasCheck === 'X' ? 'red' : '#333'};">${hasCheck}</td>`;
+                const cellFontSize = (index === 6) ? '9px' : '12px';
+                dayCells += `<td style="border:1px solid #333; text-align:center; font-size:${cellFontSize}; height:28px; font-weight:bold; color:${hasCheck === 'X' ? 'red' : '#333'}; white-space:nowrap; overflow:hidden;">${hasCheck}</td>`;
             }
 
             tableRowsHTML2 += `
