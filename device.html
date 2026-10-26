@@ -13,13 +13,31 @@
     <style>
         :root { --primary: #007bff; --bg: #f4f7f6; --admin: #6f42c1; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .card { border: 1px solid #eee; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        
+        .container { 
+            max-width: 500px; 
+            margin: auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            box-sizing: border-box;
+        }
+        
+        .card { 
+            border: 1px solid #eee; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            box-sizing: border-box;
+            overflow: hidden; /* 確保內容絕不超出卡片範圍 */
+        }
+        
         .hidden { display: none !important; }
         
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
         
-        /* 一般輸入框與下拉選單 */
+        /* 統一一般輸入框與下拉選單 */
         input, select { 
             width: 100%; 
             padding: 10px; 
@@ -27,32 +45,46 @@
             border: 1px solid #ddd; 
             border-radius: 6px; 
             box-sizing: border-box; 
-            font-size: 16px; 
+            font-size: 15px; 
             display: block;
             background: #fff;
+            height: 42px;
         }
 
-        /* 確保開始與結束時間欄位與上方測試項目完全同寬、保持反灰外觀且尺寸一致 */
+        /* 專門修正 datetime-local 在手機瀏覽器爆框與過高的問題 */
         input[type="datetime-local"] {
-            width: 100%; 
-            padding: 10px; 
-            margin-bottom: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            font-size: 16px; 
-            display: block;
-            background-color: #e9ecef;
-            color: #333;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100% !important; 
+            max-width: 100% !important;
+            height: 42px !important;
+            padding: 8px 10px !important; 
+            margin-bottom: 12px !important; 
+            border: 1px solid #ddd !important; 
+            border-radius: 6px !important; 
+            box-sizing: border-box !important; 
+            font-size: 15px !important; 
+            display: block !important;
+            background-color: #f0f2f5 !important;
+            color: #333 !important;
+            font-family: inherit;
+        }
+
+        /* 消除 Webkit 預設內距 */
+        input[type="datetime-local"]::-webkit-inner-spin-button,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            margin: 0;
+            padding: 0;
         }
         
         label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
         
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; }
-        .btn-qr { background: var(--primary); color: white; }
-        .btn-export { background: #6f42c1; color: white; padding: 8px 12px; font-size: 13px; border-radius: 6px; white-space: nowrap; }
-        .btn-log-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-top: 8px; display: inline-block; }
+        .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; height: auto; }
+        .btn-qr { background: var(--primary); color: white; height: 42px; }
+        .btn-export { background: #6f42c1; color: white; padding: 8px 12px; font-size: 13px; border-radius: 6px; white-space: nowrap; height: 42px; }
+        .btn-log-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-top: 8px; display: inline-block; height: auto; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #eee; padding: 10px; text-align: left; font-size: 14px; }
@@ -160,6 +192,7 @@
             padding: 8px 10px;
             font-size: 14px;
             box-sizing: border-box;
+            height: 42px;
         }
     </style> 
 </head>
