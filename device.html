@@ -284,7 +284,6 @@
         const id = params.get('id');
         if (id) showTestPage(id);
 
-        // 初始化月份選擇器預設為當月 (YYYY-MM)
         const now = new Date();
         const defaultYearMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
         const monthInput = document.getElementById('exportMonthInput');
@@ -402,10 +401,14 @@
                 document.getElementById('dropInputs').classList.remove('hidden');
                 document.getElementById('checkItems').classList.add('hidden');
                 document.getElementById('endTimeWrapper').classList.add('hidden');
+                // 針對 Drop tester 隱藏月份選擇器，僅保留匯出按鈕
+                document.getElementById('exportMonthInput').classList.add('hidden');
             } else {
                 document.getElementById('dropInputs').classList.add('hidden');
                 document.getElementById('checkItems').classList.remove('hidden');
                 document.getElementById('endTimeWrapper').classList.remove('hidden');
+                // 針對其他 Chamber 顯示月份選擇器
+                document.getElementById('exportMonthInput').classList.remove('hidden');
 
                 const items = CHECK_CONFIG[category] || [];
                 document.getElementById('normalChecks').innerHTML = items.map((t, i) => `
@@ -518,7 +521,6 @@
         const devName = document.getElementById('displayDevName').innerText;
         const category = window.currentCategory;
         
-        // 讀取使用者選擇的月份 (格式為 YYYY-MM)
         const selectedMonthVal = document.getElementById('exportMonthInput').value;
         let exportYear, exportMonthNum, currentMonthFilter;
         if (selectedMonthVal) {
@@ -549,7 +551,6 @@
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
 
-        // --- 第一頁：原本的本月紀錄列表 ---
         const printArea1 = document.createElement('div');
         printArea1.style.padding = '20px';
         printArea1.style.background = '#fff';
@@ -606,27 +607,23 @@
         pdf.addImage(imgData1, 'PNG', 0, 10, pdfWidth, pdfHeight1);
         document.body.removeChild(printArea1);
 
-        // --- 第二頁：新增加的開機前注意事項查檢表 (仿照圖片格式) ---
         pdf.addPage();
 
         const printArea2 = document.createElement('div');
         printArea2.style.padding = '20px';
         printArea2.style.background = '#fff';
-        printArea2.style.width = '1000px'; // 寬幅以容納 1-31 日欄位
+        printArea2.style.width = '1000px';
         printArea2.style.fontFamily = 'Microsoft JhengHei, sans-serif';
         printArea2.style.position = 'relative';
 
         const configItems = CHECK_CONFIG[category] || [];
-        // 總共呈現點檢項目 + 最後一項「檢查人簽名」
         const allItems = [...configItems, "檢查人簽名"];
 
-        // 建立 1 到 31 日的表頭
         let dateHeaders = '';
         for (let d = 1; d <= 31; d++) {
             dateHeaders += `<th style="border:1px solid #333; padding:4px; font-size:10px; text-align:center; width:22px;">${d}</th>`;
         }
 
-        // 建立各點檢項目的表格列
         let tableRowsHTML2 = '';
         allItems.forEach((itemText, index) => {
             let dayCells = '';
