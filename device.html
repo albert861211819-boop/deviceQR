@@ -275,7 +275,7 @@
     };
 
     let html5QrCode = null;
-    let currentLogsData = []; // 用於暫存當前設備的雲端紀錄陣列
+    let currentLogsData = [];
 
     window.onload = async function() {
         const params = new URLSearchParams(window.location.search);
@@ -338,7 +338,21 @@
         const h = String(now.getHours()).padStart(2, '0');
         const min = String(now.getMinutes()).padStart(2, '0');
         
-        return `${y}-${m}-${d}T${h}:${min}`; }  function getPhoneID() { let id = localStorage.getItem('my_device_id'); if (!id) { id = 'P-' + Math.floor(Math.random() * 1000000); localStorage.setItem('my_device_id', id); } return id; }  function formatForInput(date) { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return `${y}-${m}-${d}T${h}:${min}`;
+    }
+
+    function getPhoneID() {
+        let id = localStorage.getItem('my_device_id');
+        if (!id) {
+            id = 'P-' + Math.floor(Math.random() * 1000000);
+            localStorage.setItem('my_device_id', id);
+        }
+        return id;
+    }
+
+    function formatForInput(date) {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
     async function refreshAdminList() {
@@ -383,13 +397,10 @@
             window.currentCategory = category;
             document.getElementById('displayDevName').innerText = dev[1];
             
-            document.getElementById('exportContainer').classList.remove('hidden');
-
             if (category === "Drop tester") {
                 document.getElementById('dropInputs').classList.remove('hidden');
                 document.getElementById('checkItems').classList.add('hidden');
                 document.getElementById('endTimeWrapper').classList.add('hidden');
-                // 針對 Drop tester 隱藏頂部月份選擇器與按鈕
                 document.getElementById('exportContainer').classList.add('hidden');
             } else {
                 document.getElementById('dropInputs').classList.add('hidden');
@@ -403,4 +414,413 @@
                     <div class="check-row"><span class="check-label">${t}</span>
                     <div class="check-options">
                         <label><input type="radio" name="q${i}" value="正常" checked> 正常</label>
-                        <label><input type="radio
+                        <label><input type="radio" name="q${i}" value="異常"> 異常</label>
+                    </div></div>`).join('');
+                
+                const resLogs = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
+                const logs = await resLogs.json();
+                
+                const todayStr = new Date().toISOString().split('T')[0];
+                const unfinished = logs.slice(1).reverse().find(r => {
+                    if (r[0].toString() === id.toString() && !r[7] && r[8] === getPhoneID() && r[6]) {
+                        return r[6].toString().startsWith(todayStr);
+                    }
+                    return false;
+                });
+
+                if (unfinished) {
+                    document.getElementById('idesignNo').value = unfinished[2] || '';
+                    document.getElementById('workItemSelect').value = unfinished[3] || '';
+                    document.getElementById('testModel').value = unfinished[4] || '';
+                    document.getElementById('testerName').value = unfinished[5] || '';
+                    document.getElementById('startTime').value = formatForInput(unfinished[6]);
+                    document.getElementById('endTime').value = getNowStr();
+                    document.getElementById('endTime').style.border = "2px solid red";
+                }
+            }
+            fetchCloudLogs(id, category);
+        }
+    }
+
+    function handleExportPDF() {
+        if (window.currentCategory === "Drop tester") {
+            alert("請從下方「本月紀錄」中選擇對應的紀錄點擊「匯出 PDF」");
+        } else {
+            exportChamberPDF();
+        }
+    }
+
+    async function exportDropPDFByRecord(index) {
+        const r = currentLogsData[index];
+        if (!r) return alert("找不到該筆紀錄資料");
+
+        const printArea = document.createElement('div');
+        printArea.style.padding = '20px';
+        printArea.style.background = '#fff';
+        printArea.style.width = '700px';
+        printArea.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea.style.position = 'relative';
+
+        const devName = r[1] || document.getElementById('displayDevName').innerText;
+        const idesignNo = r[2] || '';
+        const workItem = r[3] || '';
+        const model = r[4] || '';
+        const user = r[5] || '';
+        const rawStart = r[6] || '';
+        const startDateOnly = rawStart ? rawStart.toString().split('T')[0].replace(' ', 'T').split('T')[0] : '';
+
+        const dropL = r[9] || '';
+        const dropW = r[10] || '';
+        const dropH = r[11] || '';
+        const dropWeight = r[12] || '';
+        const dropHeight = r[13] || '';
+
+        const g_corner = r[14] || '';
+        const g_short_e = r[15] || '';
+        const g_mid_e = r[16] || '';
+        const g_long_e = r[17] || '';
+        const g_small_f = r[18] || '';
+        const g_opp_small_f = r[19] || '';
+        const g_mid_f = r[20] || '';
+        const g_opp_mid_f = r[21] || '';
+        const g_large_f = r[22] || '';
+        const g_opp_large_s = r[23] || '';
+
+        printArea.innerHTML = `
+            <h2 style="text-align:center; margin-bottom:20px;">實驗室測試資料記錄表</h2>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:14px;">
+                <tr>
+                    <td style="padding:6px; font-weight:bold; width:18%;">設備名稱:</td><td style="width:32%;">${devName}</td>
+                    <td style="padding:6px; font-weight:bold; width:18%;">IDesign No.:</td><td style="width:32%;">${idesignNo}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px; font-weight:bold;">機種型號:</td><td>${model}</td>
+                    <td style="padding:6px; font-weight:bold;">測試人員:</td><td>${user}</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px; font-weight:bold;">測試項目:</td><td>${workItem}</td>
+                    <td style="padding:6px; font-weight:bold;">開始日期:</td><td>${startDateOnly}</td>
+                </tr>
+            </table>
+            
+            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">尺寸/重量數據</h3>
+            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:20px;">
+                <tr style="background:#f2f2f2;"><th>項目</th><th>數值</th><th>項目</th><th>數值</th></tr>
+                <tr><td>Length (mm)</td><td>${dropL}</td><td>Width (mm)</td><td>${dropW}</td></tr>
+                <tr><td>Height (mm)</td><td>${dropH}</td><td>Weight (kg)</td><td>${dropWeight}</td></tr>
+                <tr><td>Drop Height (mm)</td><td>${dropHeight}</td><td>-</td><td>-</td></tr>
+            </table>
+
+            <h3 style="margin-top:15px; border-bottom:2px solid #007bff; padding-bottom:5px;">加速規 (g) 數據</h3>
+            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; margin-bottom:25px;">
+                <tr style="background:#f2f2f2;"><th>方向</th><th>g 值</th><th>方向</th><th>g 值</th></tr>
+                <tr><td>Corner</td><td>${g_corner}</td><td>Short Edge</td><td>${g_short_e}</td></tr>
+                <tr><td>Mid Edge</td><td>${g_mid_e}</td><td>Long Edge</td><td>${g_long_e}</td></tr>
+                <tr><td>Small Face</td><td>${g_small_f}</td><td>Opposite Small Face</td><td>${g_opp_small_f}</td></tr>
+                <tr><td>Mid Face</td><td>${g_mid_f}</td><td>Opposite Mid Face</td><td>${g_opp_mid_f}</td></tr>
+                <tr><td>Large Face</td><td>${g_large_f}</td><td>Opposite Large Side</td><td>${g_opp_large_s}</td></tr>
+            </table>
+
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:10px;">QAL-003-F03</div>
+        `;
+
+        document.body.appendChild(printArea);
+        const canvas = await html2canvas(printArea, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+        document.body.removeChild(printArea);
+
+        pdf.save(`Drop_Test_Report_${idesignNo || 'Record'}.pdf`);
+    }
+
+    async function exportChamberPDF() {
+        const devName = document.getElementById('displayDevName').innerText;
+        const category = window.currentCategory;
+        
+        const selectedMonthVal = document.getElementById('exportMonthInput').value;
+        let exportYear, exportMonthNum, currentMonthFilter;
+        if (selectedMonthVal) {
+            const parts = selectedMonthVal.split('-');
+            exportYear = parseInt(parts[0], 10);
+            exportMonthNum = parseInt(parts[1], 10);
+            currentMonthFilter = selectedMonthVal;
+        } else {
+            const now = new Date();
+            exportYear = now.getFullYear();
+            exportMonthNum = now.getMonth() + 1;
+            currentMonthFilter = `${exportYear}-${exportMonthNum.toString().padStart(2, '0')}`;
+        }
+
+        let rowsData = [];
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(category)}`);
+            const data = await res.json();
+            rowsData = data.slice(1).filter(r => {
+                if (!r[6]) return false;
+                return r[0].toString() === document.getElementById('displayDevID').innerText.replace("ID: ", "").toString() && r[6].toString().startsWith(currentMonthFilter);
+            });
+        } catch (e) {
+            alert("載入指定月份資料失敗，無法產生 PDF");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const printArea1 = document.createElement('div');
+        printArea1.style.padding = '20px';
+        printArea1.style.background = '#fff';
+        printArea1.style.width = '750px';
+        printArea1.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea1.style.position = 'relative';
+
+        const rawFormat = (val) => val ? val.toString().replace('T', ' ').substring(0, 16) : '';
+
+        let tableRowsHTML1 = '';
+        if (rowsData.length === 0) {
+            tableRowsHTML1 = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">選擇的月份尚無使用紀錄</td></tr>`;
+        } else {
+            tableRowsHTML1 = rowsData.map(r => `
+                <tr>
+                    <td style="padding:8px; border:1px solid #333;">${r[2] || '---'}</td>
+                    <td style="padding:8px; border:1px solid #333;">${r[4] || '---'}</td>
+                    <td style="padding:8px; border:1px solid #333;">${rawFormat(r[6])}</td>
+                    <td style="padding:8px; border:1px solid #333;">${rawFormat(r[7]) || '進行中'}</td>
+                    <td style="padding:8px; border:1px solid #333;">${r[5] || '---'}</td>
+                </tr>
+            `).join('');
+        }
+
+        printArea1.innerHTML = `
+            <div style="border-bottom:2px solid #333; padding-bottom:8px; margin-bottom:15px; text-align:center;">
+                <h2 style="margin:0;">${devName}   ${exportMonthNum} 月使用紀錄表 (${exportYear})</h2>
+            </div>
+            
+            <table style="width:100%; border-collapse:collapse; text-align:center; font-size:13px; border:1px solid #333; margin-bottom:20px;">
+                <thead>
+                    <tr style="background:#e9ecef;">
+                        <th style="padding:8px; border:1px solid #333; width:20%;">IDesign No.</th>
+                        <th style="padding:8px; border:1px solid #333; width:28%;">測試機種</th>
+                        <th style="padding:8px; border:1px solid #333; width:22%;">啟始時間</th>
+                        <th style="padding:8px; border:1px solid #333; width:22%;">結束時間</th>
+                        <th style="padding:8px; border:1px solid #333; width:12%;">使用者</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHTML1}
+                </tbody>
+            </table>
+            
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:10px;">QAL-006-F04 RE.A0</div>
+        `;
+
+        document.body.appendChild(printArea1);
+        const canvas1 = await html2canvas(printArea1, { scale: 2 });
+        const imgData1 = canvas1.toDataURL('image/png');
+        const imgProps1 = pdf.getImageProperties(imgData1);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight1 = (imgProps1.height * pdfWidth) / imgProps1.width;
+        pdf.addImage(imgData1, 'PNG', 0, 10, pdfWidth, pdfHeight1);
+        document.body.removeChild(printArea1);
+
+        pdf.addPage('a4', 'landscape');
+
+        const printArea2 = document.createElement('div');
+        printArea2.style.padding = '25px';
+        printArea2.style.background = '#fff';
+        printArea2.style.width = '1080px';
+        printArea2.style.fontFamily = 'Microsoft JhengHei, sans-serif';
+        printArea2.style.position = 'relative';
+
+        const configItems = CHECK_CONFIG[category] || [];
+        const allItems = [...configItems, "檢查人簽名"];
+
+        let dateHeaders = '';
+        for (let d = 1; d <= 31; d++) {
+            dateHeaders += `<th style="border:1px solid #333; padding:6px 2px; font-size:11px; text-align:center; width:24px;">${d}</th>`;
+        }
+
+        let tableRowsHTML2 = '';
+        allItems.forEach((itemText, index) => {
+            let dayCells = '';
+            for (let d = 1; d <= 31; d++) {
+                let hasCheck = '';
+                rowsData.forEach(r => {
+                    if (r[6]) {
+                        const rDate = new Date(r[6]);
+                        if (rDate.getFullYear() === exportYear && (rDate.getMonth() + 1) === exportMonthNum && rDate.getDate() === d) {
+                            const checkStatus = r[9 + index];
+                            if (checkStatus === "異常") {
+                                hasCheck = "X";
+                            } else if (checkStatus === "正常" || !hasCheck) {
+                                hasCheck = "V";
+                            }
+                        }
+                    }
+                });
+                dayCells += `<td style="border:1px solid #333; text-align:center; font-size:12px; height:28px; font-weight:bold; color:${hasCheck === 'X' ? 'red' : '#333'};">${hasCheck}</td>`;
+            }
+
+            tableRowsHTML2 += `
+                <tr>
+                    <td style="border:1px solid #333; padding:8px; font-size:12px; width:300px; word-break:break-all;">${index + 1}. ${itemText}</td>
+                    ${dayCells}
+                </tr>
+            `;
+        });
+
+        printArea2.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-size:18px; font-weight:bold;">
+                <div>${exportMonthNum} 月 實驗室設備開機前注意事項查檢表 (${category})</div>
+                <div>${devName}</div>
+            </div>
+            
+            <table style="width:100%; border-collapse:collapse; border:1px solid #333;">
+                <thead>
+                    <tr style="background:#e9ecef;">
+                        <th style="border:1px solid #333; padding:8px; font-size:12px; text-align:center;">Item \\ Date</th>
+                        ${dateHeaders}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHTML2}
+                </tbody>
+            </table>
+            
+            <div style="text-align:right; font-size:12px; color:#888; margin-top:15px;">QAL-006-F04 RE.A0</div>
+        `;
+
+        document.body.appendChild(printArea2);
+        const canvas2 = await html2canvas(printArea2, { scale: 2 });
+        const imgData2 = canvas2.toDataURL('image/png');
+        const imgProps2 = pdf.getImageProperties(imgData2);
+        const pdfLandscapeWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight2 = (imgProps2.height * pdfLandscapeWidth) / imgProps2.width;
+        pdf.addImage(imgData2, 'PNG', 0, 10, pdfLandscapeWidth, pdfHeight2);
+        document.body.removeChild(printArea2);
+
+        pdf.save(`${devName}_${exportYear}年${exportMonthNum}月使用紀錄與查檢表.pdf`);
+    }
+
+    async function fetchCloudLogs(id, cat) {
+        const content = document.getElementById('logContent');
+        try {
+            const res = await fetch(`${GOOGLE_SCRIPT_URL}?category=${encodeURIComponent(cat)}`);
+            const data = await res.json();
+            
+            const now = new Date();
+            const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+
+            const rows = data.slice(1).filter(r => {
+                if (!r[6]) return false;
+                return r[0].toString() === id.toString() && r[6].toString().startsWith(currentMonthStr);
+            }).reverse();
+
+            currentLogsData = rows;
+
+            if (rows.length === 0) {
+                content.innerHTML = "<p style='text-align:center; color:#999; font-size:14px;'>本月尚無紀錄</p>";
+                return;
+            }
+
+            const isDropTester = (cat === "Drop tester");
+
+            content.innerHTML = rows.map((r, index) => {
+                const rawFormat = (val) => {
+                    if (!val) return null;
+                    return val.toString().replace('T', ' ').substring(0, 16);
+                };
+
+                const startTime = rawFormat(r[6]) || '---';
+                const endTime = rawFormat(r[7]) || '<span style="color:#dc3545; font-weight:bold;">進行中</span>';
+                
+                const endTimeHTML = isDropTester ? '' : `
+                    <div class="log-time-row">
+                        <span class="time-tag">終:</span>
+                        <span class="time-val">${endTime}</span>
+                    </div>`;
+
+                const dropExportBtnHTML = isDropTester ? `
+                    <button type="button" class="btn-log-export" onclick="exportDropPDFByRecord(${index})">📄 匯出此筆 PDF</button>
+                ` : '';
+
+                return `
+                    <div class="log-item">
+                        <div class="log-header">
+                            <span>機種: ${r[4]}</span>
+                            <span style="font-weight:normal; color:#666;">使用者: ${r[5]}</span>
+                        </div>
+                        <div class="log-body">
+                            <div class="log-time-row">
+                                <span class="time-tag">始:</span>
+                                <span class="time-val">${startTime}</span>
+                            </div>
+                            ${endTimeHTML}
+                            ${dropExportBtnHTML}
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (e) {
+            content.innerHTML = "<p style='text-align:center; color:red;'>紀錄載入失敗</p>";
+        }
+    }
+
+    async function saveToLog() {
+        const category = window.currentCategory;
+        let checksArray = [];
+        
+        if (category === "Drop tester") {
+            checksArray = [
+                document.getElementById('dropL').value,
+                document.getElementById('dropW').value,
+                document.getElementById('dropH').value,
+                document.getElementById('dropWeight').value,
+                document.getElementById('dropHeight').value,
+                document.getElementById('g_corner').value,
+                document.getElementById('g_short_e').value,
+                document.getElementById('g_mid_e').value,
+                document.getElementById('g_long_e').value,
+                document.getElementById('g_small_f').value,
+                document.getElementById('g_opp_small_f').value,
+                document.getElementById('g_mid_f').value,
+                document.getElementById('g_opp_mid_f').value,
+                document.getElementById('g_large_f').value,
+                document.getElementById('g_opp_large_s').value
+            ];
+        } else {
+            document.querySelectorAll('#normalChecks input:checked').forEach(i => checksArray.push(i.value));
+        }
+
+        const startVal = document.getElementById('startTime').value;
+        const endVal = document.getElementById('endTime').value;
+
+        const logData = {
+            action: "saveLog",
+            phoneId: getPhoneID(),
+            category: category,
+            id: document.getElementById('displayDevID').innerText.replace("ID: ",""),
+            name: document.getElementById('displayDevName').innerText,
+            idesignNo: document.getElementById('idesignNo').value,
+            workItem: document.getElementById('workItemSelect').value,
+            model: document.getElementById('testModel').value,
+            user: document.getElementById('testerName').value,
+            start: startVal ? startVal.replace("T", " ") : "",
+            end: endVal ? endVal.replace("T", " ") : "",
+            checks: checksArray
+        };
+
+        if (!logData.model || !logData.user) return alert("請填寫完整機種與使用者姓名");
+        await fetch(GOOGLE_SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(logData) });
+        alert("資料送出完成！");
+        location.reload();
+    }
+</script>
+</body>
+</html>
