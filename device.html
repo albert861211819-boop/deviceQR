@@ -30,13 +30,14 @@
             border-radius: 8px; 
             margin-bottom: 20px; 
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: hidden; /* 確保內容絕不超出卡片範圍 */
         }
         
         .hidden { display: none !important; }
         
         .admin-box { border: 2px dashed var(--admin); padding: 15px; border-radius: 8px; margin-bottom: 20px; background: #f9f6ff; }
         
+        /* 統一一般輸入框與下拉選單 */
         input, select { 
             width: 100%; 
             padding: 10px; 
@@ -50,19 +51,31 @@
             height: 42px;
         }
 
-        /* 恢復先前您滿意的開始與結束時間欄位樣式 */
+        /* 專門修正 datetime-local 在手機瀏覽器爆框與過高的問題 */
         input[type="datetime-local"] {
-            width: 100%; 
-            padding: 10px; 
-            margin-bottom: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 6px; 
-            box-sizing: border-box; 
-            font-size: 15px; 
-            display: block;
-            background-color: #e9ecef;
-            color: #333;
-            height: 42px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100% !important; 
+            max-width: 100% !important;
+            height: 42px !important;
+            padding: 8px 10px !important; 
+            margin-bottom: 12px !important; 
+            border: 1px solid #ddd !important; 
+            border-radius: 6px !important; 
+            box-sizing: border-box !important; 
+            font-size: 15px !important; 
+            display: block !important;
+            background-color: #f0f2f5 !important;
+            color: #333 !important;
+            font-family: inherit;
+        }
+
+        /* 消除 Webkit 預設內距 */
+        input[type="datetime-local"]::-webkit-inner-spin-button,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            margin: 0;
+            padding: 0;
         }
         
         label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
@@ -70,7 +83,7 @@
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; height: auto; }
         .btn-qr { background: var(--primary); color: white; height: 42px; }
-        .btn-export { background: #6f42c1; color: white; padding: 0 14px; font-size: 13px; border-radius: 6px; white-space: nowrap; height: 38px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-export { background: #6f42c1; color: white; padding: 8px 12px; font-size: 13px; border-radius: 6px; white-space: nowrap; height: 42px; }
         .btn-log-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-top: 8px; display: inline-block; height: auto; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -173,16 +186,13 @@
             gap: 6px;
             align-items: center;
         }
-        
-        /* 專門調整匯出 PDF 旁的月份輸入欄位寬高與比例 */
         #exportMonthInput {
             margin-bottom: 0;
             width: auto;
-            max-width: 140px;
-            padding: 6px 8px;
-            font-size: 13px;
+            padding: 8px 10px;
+            font-size: 14px;
             box-sizing: border-box;
-            height: 38px;
+            height: 42px;
         }
     </style> 
 </head>
