@@ -230,25 +230,25 @@
 
             <div id="dropInputs" class="hidden">
                 <h4 style="margin-bottom: 10px;">📦 Drop Data</h4>
-                <input type="number" id="dropL" placeholder="Length (mm)">
-                <input type="number" id="dropW" placeholder="Width (mm)">
-                <input type="number" id="dropH" placeholder="Height (mm)">
-                <input type="number" id="dropWeight" placeholder="Weight (kg)">
-                <input type="number" id="dropHeight" placeholder="Drop height (mm)">
+                <input type="text" inputmode="decimal" id="dropL" placeholder="Length (mm)" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                <input type="text" inputmode="decimal" id="dropW" placeholder="Width (mm)" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                <input type="text" inputmode="decimal" id="dropH" placeholder="Height (mm)" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                <input type="text" inputmode="decimal" id="dropWeight" placeholder="Weight (kg)" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                <input type="text" inputmode="decimal" id="dropHeight" placeholder="Drop height (mm)" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
 
                 <button type="button" class="collapsible" onclick="toggleCollapsible(this)">加速規數值錄入 (g)</button>
                 <div class="content">
                     <div class="g-input-grid">
-                        <input type="number" id="g_corner" placeholder="Corner">
-                        <input type="number" id="g_short_e" placeholder="Short edge">
-                        <input type="number" id="g_mid_e" placeholder="Mid edge">
-                        <input type="number" id="g_long_e" placeholder="Long edge">
-                        <input type="number" id="g_small_f" placeholder="Small face">
-                        <input type="number" id="g_opp_small_f" placeholder="Oppsite small f.">
-                        <input type="number" id="g_mid_f" placeholder="Mid face">
-                        <input type="number" id="g_opp_mid_f" placeholder="Oppsite mid f.">
-                        <input type="number" id="g_large_f" placeholder="Large face">
-                        <input type="number" id="g_opp_large_s" placeholder="Oppsite large s.">      
+                        <input type="text" inputmode="decimal" id="g_corner" placeholder="Corner" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_short_e" placeholder="Short edge" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_mid_e" placeholder="Mid edge" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_long_e" placeholder="Long edge" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_small_f" placeholder="Small face" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_opp_small_f" placeholder="Oppsite small f." oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_mid_f" placeholder="Mid face" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_opp_mid_f" placeholder="Oppsite mid f." oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_large_f" placeholder="Large face" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                        <input type="text" inputmode="decimal" id="g_opp_large_s" placeholder="Oppsite large s." oninput="this.value = this.value.replace(/[^0-9.]/g, '')">      
                     </div>
                 </div>             
             </div>
@@ -401,13 +401,11 @@
                 document.getElementById('dropInputs').classList.remove('hidden');
                 document.getElementById('checkItems').classList.add('hidden');
                 document.getElementById('endTimeWrapper').classList.add('hidden');
-                // 針對 Drop tester 隱藏月份選擇器，僅保留匯出按鈕
                 document.getElementById('exportMonthInput').classList.add('hidden');
             } else {
                 document.getElementById('dropInputs').classList.add('hidden');
                 document.getElementById('checkItems').classList.remove('hidden');
                 document.getElementById('endTimeWrapper').classList.remove('hidden');
-                // 針對其他 Chamber 顯示月份選擇器
                 document.getElementById('exportMonthInput').classList.remove('hidden');
 
                 const items = CHECK_CONFIG[category] || [];
