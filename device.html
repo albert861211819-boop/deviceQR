@@ -51,7 +51,7 @@
             height: 42px;
         }
 
-        /* 專門修正 datetime-local 在手機瀏覽器爆框與過高的問題 */
+        /* 您的開始與結束時間欄位保持不變 */
         input[type="datetime-local"] {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -83,7 +83,18 @@
         button { padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-submit { background: #28a745; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 16px; height: auto; }
         .btn-qr { background: var(--primary); color: white; height: 42px; }
-        .btn-export { background: #6f42c1; color: white; padding: 8px 12px; font-size: 13px; border-radius: 6px; white-space: nowrap; height: 42px; }
+        
+        /* 調整匯出 PDF 按鈕高度與內距，使其與縮小的月份欄位完美匹配 */
+        .btn-export { 
+            background: #6f42c1; 
+            color: white; 
+            padding: 4px 10px; 
+            font-size: 13px; 
+            border-radius: 6px; 
+            white-space: nowrap; 
+            height: 36px; 
+        }
+        
         .btn-log-export { background: #6f42c1; color: white; padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-top: 8px; display: inline-block; height: auto; }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -186,13 +197,16 @@
             gap: 6px;
             align-items: center;
         }
+        
+        /* 專門調整匯出 PDF 旁的月份輸入欄位：縮小寬度與高度，避免過大 */
         #exportMonthInput {
             margin-bottom: 0;
             width: auto;
-            padding: 8px 10px;
-            font-size: 14px;
+            max-width: 130px;
+            padding: 4px 6px;
+            font-size: 13px;
             box-sizing: border-box;
-            height: 42px;
+            height: 36px;
         }
     </style> 
 </head>
